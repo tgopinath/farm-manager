@@ -1,46 +1,68 @@
 import { router } from 'expo-router'
-import { View } from 'react-native'
-import { Button, Card, Empty, ErrorBox, H, Row, Screen, T } from '../../components/ui'
+import { Pressable, View } from 'react-native'
+import Ionicons from '@expo/vector-icons/Ionicons'
+import { CameraPlayer } from '../../components/CameraPlayer'
+import { Badge, Button, Card, Empty, ErrorBox, Fab, Row, Screen, Section, T } from '../../components/ui'
 import { useCollection } from '../../lib/hooks'
-import { useTheme } from '../../lib/theme'
+import { useTheme, useWide } from '../../lib/theme'
 
-const KIND_LABEL: Record<string, string> = { hls: 'HLS', mjpeg: 'MJPEG', snapshot: 'Snapshot', web: 'Web viewer' }
+const KIND: Record<string, string> = { hls: 'Live video', mjpeg: 'Live stream', snapshot: 'Snapshots', web: 'Web viewer' }
 
 export default function Cameras() {
   const t = useTheme()
+  const wide = useWide()
   const { data, error, loading, refresh } = useCollection('cameras')
+  const add = () => router.push('/edit/cameras')
 
   return (
-    <Screen refreshing={loading} onRefresh={refresh}>
+    <Screen
+      title="Cameras"
+      subtitle="Watch the sheds, and check an animal from a photo"
+      refreshing={loading}
+      onRefresh={refresh}
+      action={wide ? <Button icon="add" title="Add camera" onPress={add} /> : null}
+      fab={<Fab onPress={add} label="Add camera" />}
+    >
       {error ? <ErrorBox message={error} onRetry={refresh} /> : null}
 
-      <Card style={{ backgroundColor: t.soft, borderColor: t.soft }}>
-        <T bold size={16}>📷 Phone camera</T>
-        <T muted size={13} style={{ marginVertical: 6 }}>
-          Photograph an animal that looks unwell. The AI looks for visible signs of illness and tells you how urgent it is.
-        </T>
-        <Button title="Take a photo for a health check" onPress={() => router.push('/health-check')} />
-      </Card>
+      <Pressable
+        onPress={() => router.push('/health-check')}
+        accessibilityRole="button"
+        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: 20, backgroundColor: t.accentSoft, marginBottom: 28, transform: [{ scale: pressed ? 0.99 : 1 }] })}
+      >
+        <View style={{ width: 54, height: 54, borderRadius: 16, backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="camera" size={26} color="#1F1600" />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <T display size={19} color={t.accentText}>Check an animal's health</T>
+          <T size={14} color={t.accentText}>Take a photo. The AI looks for visible signs of illness and says how urgent it is.</T>
+        </View>
+        <Ionicons name="chevron-forward" size={22} color={t.accentText} />
+      </Pressable>
 
-      <H right={<Button small kind="ghost" title="+ Add camera" onPress={() => router.push('/edit/cameras')} />}>Farm CCTV</H>
-      {!loading && data.length === 0 ? (
-        <Empty
-          title="No cameras added"
-          detail="Add your CCTV or IP camera's HLS (.m3u8), MJPEG or snapshot URL. RTSP-only cameras need a gateway such as go2rtc or your NVR's HLS output."
-        />
-      ) : null}
-      {data.map((c) => (
-        <Card key={c.id} onPress={() => router.push(`/camera/${c.id}`)}>
-          <Row style={{ flexWrap: 'nowrap' }} gap={12}>
-            <T size={24}>🎥</T>
-            <View style={{ flex: 1 }}>
-              <T bold>{c.name}</T>
-              <T muted size={12} numberOfLines={1}>{[KIND_LABEL[c.kind] ?? c.kind, c.location].filter(Boolean).join(' · ')}</T>
+      <Section title="Farm CCTV">
+        {!loading && data.length === 0 ? (
+          <Empty icon="🎥" title="No cameras added" detail="Add a camera's HLS (.m3u8), MJPEG or snapshot address. Cameras that only offer RTSP need a gateway such as go2rtc." action={<Button icon="add" title="Add camera" onPress={add} />} />
+        ) : null}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+          {data.map((c) => (
+            <View key={c.id} style={{ width: wide ? 'calc(50% - 8px)' as any : '100%' }}>
+              <Card padded={false} style={{ overflow: 'hidden' }}>
+                <CameraPlayer kind={c.kind} url={c.url} height={wide ? 240 : 200} />
+                <Pressable onPress={() => router.push(`/camera/${c.id}`)} accessibilityRole="button" style={{ padding: 14 }}>
+                  <Row style={{ justifyContent: 'space-between' }} wrap={false}>
+                    <View style={{ flexShrink: 1, gap: 2 }}>
+                      <T bold>{c.name}</T>
+                      {c.location ? <T muted size={13}>{c.location}</T> : null}
+                    </View>
+                    <Badge label={KIND[c.kind] ?? c.kind} tone="info" dot />
+                  </Row>
+                </Pressable>
+              </Card>
             </View>
-            <T color={t.primary} bold>View ›</T>
-          </Row>
-        </Card>
-      ))}
+          ))}
+        </View>
+      </Section>
     </Screen>
   )
 }

@@ -11,7 +11,7 @@
 import type { Rec } from './api'
 import { summary } from './summary'
 
-const KEY = 'farm.demo.v1'
+const KEY = 'farm.demo.v2'
 type DB = Record<string, Rec[]>
 
 let db: DB | null = null
@@ -22,12 +22,14 @@ const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(
 
 function seed(): DB {
   const now = new Date().toISOString()
-  const r = (data: Record<string, any>): Rec => ({ ...data, id: uid(), createdAt: now, updatedAt: now })
+  // Stable ids, so a sample animal has a link that works for everyone (e.g. /animal/raja).
+  let n = 0
+  const r = (data: Record<string, any>): Rec => ({ ...data, id: data.id ?? `s${++n}`, createdAt: now, updatedAt: now })
   const sbi = r({ name: 'SBI savings', openingBalance: 42000, minBalance: 15000 })
   const cash = r({ name: 'Cash box', openingBalance: 3000, minBalance: 2000 })
-  const lakshmi = r({ species: 'goat', name: 'Lakshmi', tag: 'G-014', breed: 'Boer', sex: 'female', status: 'pregnant', birthDate: '2024-03-10', weightKg: 38, count: 1 })
-  const raja = r({ species: 'goat', name: 'Raja', tag: 'G-002', breed: 'Jamunapari', sex: 'male', status: 'sick', birthDate: '2023-01-05', weightKg: 52, count: 1, notes: 'Coughing since Monday' })
-  const gauri = r({ species: 'cow', name: 'Gauri', tag: 'C-01', breed: 'Gir', sex: 'female', status: 'healthy', birthDate: '2021-07-01', weightKg: 380, count: 1 })
+  const lakshmi = r({ id: 'lakshmi', species: 'goat', name: 'Lakshmi', tag: 'G-014', breed: 'Boer', sex: 'female', status: 'pregnant', birthDate: '2024-03-10', weightKg: 38, count: 1 })
+  const raja = r({ id: 'raja', species: 'goat', name: 'Raja', tag: 'G-002', breed: 'Jamunapari', sex: 'male', status: 'sick', birthDate: '2023-01-05', weightKg: 52, count: 1, notes: 'Coughing since Monday' })
+  const gauri = r({ id: 'gauri', species: 'cow', name: 'Gauri', tag: 'C-01', breed: 'Gir', sex: 'female', status: 'healthy', birthDate: '2021-07-01', weightKg: 380, count: 1 })
   const tx = (type: string, amount: number, category: string, d: number, accountId: string, species = '') =>
     r({ type, amount, category, date: day(d), accountId, species })
   return {

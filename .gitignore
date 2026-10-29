@@ -9,3 +9,4 @@ app/android/
 *.log
 .DS_Store
 app/dist-demo/
+!prototype/app/assets/node_modules/

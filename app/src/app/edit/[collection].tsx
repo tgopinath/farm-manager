@@ -5,10 +5,12 @@
 import { useEffect, useState } from 'react'
 import { Alert, Platform, View } from 'react-native'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { Button, Chip, Input, Row, Screen, T } from '../../components/ui'
+import { Button, Card, Chip, Input, Row, Screen, T, useToast } from '../../components/ui'
 import { api, Rec } from '../../lib/api'
 import { NUMBER_FIELDS, SCHEMAS, type Field } from '../../lib/schema'
 import { speciesEmoji, today, useTheme } from '../../lib/theme'
+
+const yesterday = () => new Date(Date.now() - 86400000).toISOString().slice(0, 10)
 
 function confirm(message: string): Promise<boolean> {
   if (Platform.OS === 'web') return Promise.resolve(window.confirm(message))
@@ -26,6 +28,7 @@ export default function EditRecord() {
   const t = useTheme()
   const { collection, id, ...prefill } = useLocalSearchParams<Record<string, string>>()
   const schema = SCHEMAS[collection]
+  const toast = useToast()
   const [values, setValues] = useState<Record<string, string>>({})
   const [refs, setRefs] = useState<Record<string, Rec[]>>({})
   const [busy, setBusy] = useState(false)
@@ -68,6 +71,7 @@ export default function EditRecord() {
     try {
       if (id) await api.update(collection, id, body)
       else await api.create(collection, body)
+      toast(id ? 'Changes saved' : `${collection === 'transactions' ? (body.type === 'income' ? 'Income' : 'Expense') : schema.title} added`)
       router.back()
     } catch (e: any) {
       setError(e.message)
@@ -81,6 +85,7 @@ export default function EditRecord() {
     setBusy(true)
     try {
       await api.remove(collection, id)
+      toast(`${schema.title} deleted`)
       router.back()
     } catch (e: any) {
       setError(e.message)
@@ -97,13 +102,13 @@ export default function EditRecord() {
         : (refs[f.ref!] ?? []).filter((r) => r.status !== 'sold' && r.status !== 'dead').map((r) => ({ value: r.id, label: refLabel(r) }))
       return (
         <View key={f.key} style={{ marginBottom: 14 }}>
-          <T muted size={13} bold style={{ marginBottom: 6 }}>{label}</T>
+          <T size={14} bold style={{ marginBottom: 8 }}>{label}</T>
           <Row>
             {!f.required ? <Chip label="None" active={!v} onPress={() => set(f.key, '')} /> : null}
             {options.map((o) => <Chip key={o.value} label={o.label} active={v === o.value} onPress={() => set(f.key, o.value)} />)}
             {f.type === 'ref' && options.length === 0 ? <T muted size={13}>Nothing added yet</T> : null}
           </Row>
-          {f.help ? <T muted size={12} style={{ marginTop: 4 }}>{f.help}</T> : null}
+          {f.help ? <T muted size={12.5} style={{ marginTop: 6 }}>{f.help}</T> : null}
         </View>
       )
     }
@@ -111,7 +116,12 @@ export default function EditRecord() {
       return (
         <View key={f.key}>
           <Input label={label} value={v} onChangeText={(x) => set(f.key, x)} placeholder="YYYY-MM-DD" help={f.help} autoCapitalize="none" />
-          <View style={{ marginTop: -8, marginBottom: 14 }}><Row><Chip label="Today" onPress={() => set(f.key, today())} /></Row></View>
+          <View style={{ marginTop: -8, marginBottom: 18 }}>
+            <Row gap={6}>
+              <Chip label="Today" active={v === today()} onPress={() => set(f.key, today())} />
+              <Chip label="Yesterday" active={v === yesterday()} onPress={() => set(f.key, yesterday())} />
+            </Row>
+          </View>
         </View>
       )
     }
@@ -123,6 +133,7 @@ export default function EditRecord() {
         onChangeText={(x) => set(f.key, x)}
         placeholder={f.placeholder}
         help={f.help}
+        prefix={/(amount|Balance|Cost|cost)$/.test(f.key) ? '₹' : undefined}
         multiline={f.type === 'textarea'}
         keyboardType={f.type === 'number' ? 'decimal-pad' : 'default'}
         autoCapitalize={f.key === 'url' ? 'none' : 'sentences'}
@@ -132,12 +143,14 @@ export default function EditRecord() {
   }
 
   return (
-    <Screen>
+    <Screen max={640}>
       <Stack.Screen options={{ title: `${id ? 'Edit' : 'New'} ${schema.title.toLowerCase()}` }} />
-      {schema.fields.map(field)}
-      {error ? <T color={t.danger} style={{ marginBottom: 10 }}>{error}</T> : null}
-      <Button title={id ? 'Save changes' : `Add ${schema.title.toLowerCase()}`} busy={busy} onPress={save} />
-      {id ? <View style={{ marginTop: 10 }}><Button kind="danger" title="Delete" onPress={remove} disabled={busy} /></View> : null}
+      <Card style={{ padding: 20, paddingBottom: 4, marginBottom: 16 }}>
+        {schema.fields.map(field)}
+      </Card>
+      {error ? <T color={t.danger} style={{ marginBottom: 12 }}>{error}</T> : null}
+      <Button full title={id ? 'Save changes' : `Add ${schema.title.toLowerCase()}`} icon={id ? 'checkmark' : 'add'} busy={busy} onPress={save} />
+      {id ? <View style={{ marginTop: 10 }}><Button full kind="danger" icon="trash-outline" title={`Delete ${schema.title.toLowerCase()}`} onPress={remove} disabled={busy} /></View> : null}
     </Screen>
   )
 }

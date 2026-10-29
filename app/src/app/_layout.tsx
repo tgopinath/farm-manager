@@ -1,45 +1,50 @@
 import { Stack } from 'expo-router/stack'
 import { StatusBar } from 'expo-status-bar'
-import { Pressable, Text, View } from 'react-native'
-import { useTheme } from '../lib/theme'
+import { Text, View } from 'react-native'
+import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque'
+import { ToastProvider } from '../components/ui'
+import { FONT, useTheme, useWide } from '../lib/theme'
 import { DEMO } from '../lib/api'
-import { demo } from '../lib/demo'
 
+/** On a phone the demo notice is a thin strip; the sidebar carries it on a wide screen. */
 function DemoStrip() {
   const t = useTheme()
-  const reset = () => { demo.reset(); if (typeof window !== 'undefined') window.location.reload() }
+  const wide = useWide()
+  if (wide) return null
   return (
-    <View style={{ backgroundColor: t.primary, paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12 }}>
-      <Text style={{ color: t.primaryText, fontSize: 12.5 }}>Demo · sample farm, saved in this browser</Text>
-      <Pressable onPress={reset} accessibilityRole="button" hitSlop={8}>
-        <Text style={{ color: t.primaryText, fontSize: 12.5, fontWeight: '700', textDecorationLine: 'underline' }}>Reset</Text>
-      </Pressable>
+    <View style={{ backgroundColor: t.accentSoft, paddingVertical: 6, paddingHorizontal: 12, alignItems: 'center' }}>
+      <Text style={{ color: t.accentText, fontSize: 12.5 }}>Demo farm. Changes stay in this browser.</Text>
     </View>
   )
 }
 
 export default function RootLayout() {
   const t = useTheme()
+  const [loaded] = useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold })
+  if (!loaded) return <View style={{ flex: 1, backgroundColor: t.bg }} />
   return (
-    <View style={{ flex: 1, backgroundColor: t.bg }}>
-      <StatusBar style="auto" />
-      {DEMO ? <DemoStrip /> : null}
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: t.card },
-          headerTintColor: t.primary,
-          headerTitleStyle: { color: t.text },
-          contentStyle: { backgroundColor: t.bg },
-        }}
-      >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="animal/[id]" options={{ title: 'Animal' }} />
-        <Stack.Screen name="camera/[id]" options={{ title: 'Live camera' }} />
-        <Stack.Screen name="edit/[collection]" options={{ title: 'Edit', presentation: 'modal' }} />
-        <Stack.Screen name="health-check" options={{ title: 'AI health check' }} />
-        <Stack.Screen name="vaccinations" options={{ title: 'Vaccinations' }} />
-        <Stack.Screen name="settings" options={{ title: 'Settings' }} />
-      </Stack>
-    </View>
+    <ToastProvider>
+      <View style={{ flex: 1, backgroundColor: t.bg }}>
+        <StatusBar style="auto" />
+        {DEMO ? <DemoStrip /> : null}
+        <Stack
+          screenOptions={{
+            headerStyle: { backgroundColor: t.bg },
+            headerShadowVisible: false,
+            headerTintColor: t.primary,
+            headerTitleStyle: { color: t.text, fontFamily: FONT.displaySemi, fontSize: 18 },
+            contentStyle: { backgroundColor: t.bg },
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="animal/[id]" options={{ title: '' }} />
+          <Stack.Screen name="camera/[id]" options={{ title: 'Live camera' }} />
+          <Stack.Screen name="edit/[collection]" options={{ title: 'Edit', presentation: 'modal' }} />
+          <Stack.Screen name="health-check" options={{ title: 'Health check' }} />
+          <Stack.Screen name="vaccinations" options={{ title: 'Vaccinations' }} />
+          <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+        </Stack>
+      </View>
+    </ToastProvider>
   )
 }

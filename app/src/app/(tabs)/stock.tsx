@@ -1,25 +1,24 @@
 import { useState } from 'react'
 import { Alert, Platform, View } from 'react-native'
 import { router } from 'expo-router'
-import { Button, Card, Chip, Empty, ErrorBox, Row, Screen, T } from '../../components/ui'
+import { Badge, Button, Card, Chip, Empty, ErrorBox, Fab, IconButton, List, ListRow, Meter, Row, Screen, T, useToast, type Tone } from '../../components/ui'
 import { useCollection } from '../../lib/hooks'
-import { api, Rec } from '../../lib/api'
-import { money, today, useTheme } from '../../lib/theme'
+import { api, type Rec } from '../../lib/api'
+import { money, niceDate, today, useTheme, useWide } from '../../lib/theme'
 
 const DAY = 86400000
+const CATEGORY: Record<string, string> = { feed: '🌾', medicine: '💊', equipment: '🛠️', produce: '🥚', other: '📦' }
 
 function nextDue(t: Rec): string | null {
   if (t.dueDate) return t.dueDate
-  if (t.lastDone && Number(t.everyDays) > 0) {
-    return new Date(Date.parse(t.lastDone) + Number(t.everyDays) * DAY).toISOString().slice(0, 10)
-  }
+  if (t.lastDone && Number(t.everyDays) > 0) return new Date(Date.parse(t.lastDone) + Number(t.everyDays) * DAY).toISOString().slice(0, 10)
   return null
 }
 
 const edit = (collection: string, id?: string) =>
   router.push({ pathname: '/edit/[collection]', params: id ? { collection, id } : { collection } })
 
-/** Ask for a number. Alert.prompt only exists on iOS, so other platforms open the edit form. */
+/** Alert.prompt is iOS-only; the web has window.prompt; Android opens the form. */
 function askNumber(title: string, onValue: (n: number) => void, fallback: () => void) {
   if (Platform.OS === 'ios') {
     Alert.prompt(title, undefined, (v) => { const n = Number(v); if (Number.isFinite(n) && n > 0) onValue(n) }, 'plain-text', '', 'decimal-pad')
@@ -29,97 +28,127 @@ function askNumber(title: string, onValue: (n: number) => void, fallback: () => 
   } else fallback()
 }
 
+function level(item: Rec): { days: number | null; tone: Tone; fill: number } {
+  const qty = Number(item.quantity) || 0
+  const daily = Number(item.dailyUse) || 0
+  const min = Number(item.minLevel) || 0
+  const days = daily > 0 ? Math.floor(qty / daily) : null
+  const low = qty <= min || (days !== null && days <= 5)
+  const tone: Tone = qty <= 0 || (days !== null && days <= 2) ? 'danger' : low ? 'warn' : 'ok'
+  const fill = days !== null ? days / 21 : min ? qty / (min * 3) : 1
+  return { days, tone, fill: Math.min(1, fill) }
+}
+
 export default function Stock() {
   const t = useTheme()
+  const wide = useWide()
+  const toast = useToast()
   const [tab, setTab] = useState<'inventory' | 'maintenance'>('inventory')
   const inv = useCollection('inventory')
   const tasks = useCollection('maintenance')
 
-  async function adjust(item: Rec, delta: number) {
-    await api.update('inventory', item.id, { quantity: Math.max(0, (Number(item.quantity) || 0) + delta) })
+  async function change(item: Rec, delta: number, message: string) {
+    const before = Number(item.quantity) || 0
+    await api.update('inventory', item.id, { quantity: Math.max(0, before + delta) })
     inv.refresh()
+    toast(message, { label: 'Undo', onPress: async () => { await api.update('inventory', item.id, { quantity: before }); inv.refresh() } })
   }
 
   async function markDone(task: Rec) {
-    const patch: Rec = { id: task.id, lastDone: today() }
-    if (!Number(task.everyDays)) patch.dueDate = ''
-    await api.update('maintenance', task.id, patch)
+    const prev = { lastDone: task.lastDone ?? '', dueDate: task.dueDate ?? '' }
+    await api.update('maintenance', task.id, { lastDone: today(), ...(Number(task.everyDays) ? {} : { dueDate: '' }) })
     tasks.refresh()
+    toast(`${task.title} marked done`, { label: 'Undo', onPress: async () => { await api.update('maintenance', task.id, prev); tasks.refresh() } })
   }
 
+  const items = [...inv.data].sort((a, b) => (level(a).days ?? 999) - (level(b).days ?? 999))
+  const lowCount = items.filter((i) => level(i).tone !== 'ok').length
+  const add = () => edit(tab === 'inventory' ? 'inventory' : 'maintenance')
+
   return (
-    <Screen refreshing={inv.loading || tasks.loading} onRefresh={() => { inv.refresh(); tasks.refresh() }}>
+    <Screen
+      title="Stock"
+      subtitle={lowCount ? `${lowCount} item${lowCount > 1 ? 's' : ''} running low` : 'Everything is well stocked'}
+      refreshing={inv.loading || tasks.loading}
+      onRefresh={() => { inv.refresh(); tasks.refresh() }}
+      action={wide ? <Button icon="add" title={tab === 'inventory' ? 'Add item' : 'Add task'} onPress={add} /> : null}
+      fab={<Fab onPress={add} label={tab === 'inventory' ? 'Add item' : 'Add task'} />}
+    >
       {inv.error ? <ErrorBox message={inv.error} onRetry={inv.refresh} /> : null}
-      <Row style={{ marginBottom: 12 }}>
-        <Chip label="Feed & farm goods" active={tab === 'inventory'} onPress={() => setTab('inventory')} />
-        <Chip label="Maintenance" active={tab === 'maintenance'} onPress={() => setTab('maintenance')} />
+      <Row style={{ marginBottom: 18 }}>
+        <Chip label="Feed and goods" count={inv.data.length} active={tab === 'inventory'} onPress={() => setTab('inventory')} />
+        <Chip label="Upkeep" count={tasks.data.length} active={tab === 'maintenance'} onPress={() => setTab('maintenance')} />
       </Row>
 
       {tab === 'inventory' ? (
         <>
-          <Button title="+ Add stock item" onPress={() => edit('inventory')} />
-          <View style={{ height: 12 }} />
-          {!inv.loading && inv.data.length === 0 ? (
-            <Empty title="No stock recorded" detail="Add feed with how much you use per day, and you'll be reminded before it runs out." />
+          {!inv.loading && items.length === 0 ? (
+            <Empty icon="🌾" title="No stock recorded" detail="Add feed with how much you use a day, and you'll be warned five days before it runs out." action={<Button icon="add" title="Add item" onPress={add} />} />
           ) : null}
-          {[...inv.data].sort((a, b) => String(a.category).localeCompare(String(b.category))).map((item) => {
-            const qty = Number(item.quantity) || 0
-            const daily = Number(item.dailyUse) || 0
-            const daysLeft = daily > 0 ? Math.floor(qty / daily) : null
-            const low = qty <= (Number(item.minLevel) || 0) || (daysLeft !== null && daysLeft <= 5)
-            const pct = item.minLevel ? Math.min(1, qty / (Number(item.minLevel) * 3)) : null
-            return (
-              <Card key={item.id} onPress={() => edit('inventory', item.id)}>
-                <Row style={{ justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1 }}>
-                    <T bold>{item.name}</T>
-                    <T muted size={12}>{item.category}{item.unitCost ? ` · ${money(Number(item.unitCost))}/${item.unit}` : ''}</T>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <T bold size={18} color={low ? t.danger : t.text}>{qty} {item.unit}</T>
-                    {daysLeft !== null ? <T size={12} color={low ? t.danger : t.muted}>≈ {daysLeft} day(s) left</T> : null}
-                  </View>
-                </Row>
-                {pct !== null ? (
-                  <View style={{ height: 6, borderRadius: 3, backgroundColor: t.border, marginTop: 8, overflow: 'hidden' }}>
-                    <View style={{ width: `${Math.round(pct * 100)}%`, height: 6, backgroundColor: low ? t.danger : t.primary }} />
-                  </View>
-                ) : null}
-                <Row style={{ marginTop: 10 }}>
-                  <Button small kind="ghost" title={`− Used`} onPress={() => askNumber(`How much ${item.name} was used? (${item.unit})`, (n) => adjust(item, -n), () => edit('inventory', item.id))} />
-                  <Button small kind="ghost" title={`+ Restocked`} onPress={() => askNumber(`How much ${item.name} was added? (${item.unit})`, (n) => adjust(item, n), () => edit('inventory', item.id))} />
-                </Row>
-              </Card>
-            )
-          })}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+            {items.map((item) => {
+              const lv = level(item)
+              const daily = Number(item.dailyUse) || 0
+              return (
+                <View key={item.id} style={{ width: wide ? 'calc(33.333% - 8px)' as any : '100%' }}>
+                  <Card style={{ gap: 12 }}>
+                    <Row style={{ justifyContent: 'space-between' }} wrap={false} align="flex-start">
+                      <Row gap={10} wrap={false} style={{ flexShrink: 1 }}>
+                        <T size={22}>{CATEGORY[item.category] ?? '📦'}</T>
+                        <View style={{ flexShrink: 1 }}>
+                          <T bold numberOfLines={1}>{item.name}</T>
+                          <T faint size={12.5}>{item.unitCost ? `${money(Number(item.unitCost))} per ${item.unit}` : item.category}</T>
+                        </View>
+                      </Row>
+                      <Row gap={4} wrap={false}>
+                        {lv.tone !== 'ok' ? <Badge label={lv.tone === 'danger' ? 'Almost out' : 'Low'} tone={lv.tone} /> : null}
+                        <IconButton icon="create-outline" label={`Edit ${item.name}`} onPress={() => edit('inventory', item.id)} />
+                      </Row>
+                    </Row>
+                    <View>
+                      <Row style={{ justifyContent: 'space-between', marginBottom: 8 }} align="flex-end">
+                        <T display size={26}>{item.quantity}<T size={14} muted> {item.unit}</T></T>
+                        {lv.days !== null ? <T size={13.5} weight="600" color={lv.tone === 'ok' ? t.muted : lv.tone === 'danger' ? t.danger : t.warn}>{lv.days} days left</T> : null}
+                      </Row>
+                      <Meter value={lv.fill} tone={lv.tone} />
+                    </View>
+                    <Row gap={8}>
+                      {daily ? (
+                        <Button small kind="secondary" icon="remove" title={`Today's ${daily} ${item.unit}`} onPress={() => change(item, -daily, `Logged ${daily} ${item.unit} of ${item.name}`)} />
+                      ) : (
+                        <Button small kind="secondary" icon="remove" title="Used" onPress={() => askNumber(`How much ${item.name} was used? (${item.unit})`, (n) => change(item, -n, `Logged ${n} ${item.unit} of ${item.name}`), () => edit('inventory', item.id))} />
+                      )}
+                      <Button small kind="ghost" icon="add" title="Restocked" onPress={() => askNumber(`How much ${item.name} came in? (${item.unit})`, (n) => change(item, n, `Added ${n} ${item.unit} of ${item.name}`), () => edit('inventory', item.id))} />
+                    </Row>
+                  </Card>
+                </View>
+              )
+            })}
+          </View>
         </>
       ) : (
         <>
-          <Button title="+ Add maintenance task" onPress={() => edit('maintenance')} />
-          <View style={{ height: 12 }} />
           {!tasks.loading && tasks.data.length === 0 ? (
-            <Empty title="No maintenance tasks" detail="Track shed cleaning, water tanks, pumps, fencing and vehicle servicing." />
-          ) : null}
-          {tasks.data
-            .map((task) => ({ task, due: nextDue(task) }))
-            .sort((a, b) => (a.due ?? '9999').localeCompare(b.due ?? '9999'))
-            .map(({ task, due }) => {
-              const overdue = due !== null && due < today()
-              return (
-                <Card key={task.id} onPress={() => edit('maintenance', task.id)}>
-                  <Row style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
-                    <View style={{ flex: 1 }}>
-                      <T bold>{task.title}</T>
-                      <T muted size={13}>
-                        {[task.asset, Number(task.everyDays) ? `every ${task.everyDays} days` : 'one-off', task.lastDone && `last done ${task.lastDone}`].filter(Boolean).join(' · ')}
-                      </T>
-                      {due ? <T size={13} bold color={overdue ? t.danger : t.primary}>{overdue ? 'Overdue since' : 'Next due'} {due}</T> : null}
-                    </View>
-                    <Button small title="Done ✓" onPress={() => markDone(task)} />
-                  </Row>
-                </Card>
-              )
-            })}
+            <Empty icon="🛠️" title="No upkeep tasks" detail="Track shed cleaning, water tanks, pumps, fencing and vehicle servicing." action={<Button icon="add" title="Add task" onPress={add} />} />
+          ) : (
+            <List>
+              {tasks.data
+                .map((task) => ({ task, due: nextDue(task) }))
+                .sort((a, b) => (a.due ?? '9999').localeCompare(b.due ?? '9999'))
+                .map(({ task, due }) => {
+                  const overdue = due !== null && due < today()
+                  return (
+                    <ListRow key={task.id} onPress={() => edit('maintenance', task.id)} trailing={<Button small kind={overdue ? 'primary' : 'secondary'} icon="checkmark" title="Done" onPress={() => markDone(task)} />}>
+                      <View style={{ gap: 3 }}>
+                        <T bold>{task.title}</T>
+                        <T muted size={13}>{[task.asset, Number(task.everyDays) ? `Every ${task.everyDays} days` : 'One-off', task.lastDone && `last done ${niceDate(task.lastDone)}`].filter(Boolean).join(', ')}</T>
+                        {due ? <Badge label={overdue ? `Overdue since ${niceDate(due)}` : `Due ${niceDate(due)}`} tone={overdue ? 'danger' : 'info'} dot /> : null}
+                      </View>
+                    </ListRow>
+                  )
+                })}
+            </List>
+          )}
         </>
       )}
     </Screen>

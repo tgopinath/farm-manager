@@ -8,6 +8,7 @@ const DAY = 86400000
 const dayOf = (iso) => String(iso ?? '').slice(0, 10)
 const daysBetween = (from, to) => Math.round((Date.parse(dayOf(to)) - Date.parse(dayOf(from))) / DAY)
 const inr = (n) => '₹' + n.toLocaleString('en-IN', { maximumFractionDigits: 2 })
+const days = (n) => `${n} day${n === 1 ? '' : 's'}`
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0)
 
 /** Upcoming window for vaccinations and maintenance. */
@@ -60,7 +61,7 @@ export function reminders(data, today = new Date().toISOString()) {
       kind: 'vaccination',
       level: d < 0 ? 'overdue' : 'due',
       title: `${v.vaccine} for ${label(v)}`,
-      detail: d < 0 ? `${-d} day(s) overdue` : d === 0 ? 'Due today' : `Due in ${d} day(s)`,
+      detail: d < 0 ? `${days(-d)} late` : d === 0 ? 'Due today' : `Due in ${days(d)}`,
       date: dayOf(v.dueDate),
       ref: { collection: 'vaccinations', id: v.id },
     })
@@ -73,7 +74,7 @@ export function reminders(data, today = new Date().toISOString()) {
       kind: item.category === 'feed' ? 'feed' : 'stock',
       level: s.quantity <= 0 || s.daysLeft === 0 ? 'overdue' : 'warning',
       title: `${item.name} is running low`,
-      detail: `${s.quantity} ${item.unit ?? ''} left${s.daysLeft !== null ? ` · about ${s.daysLeft} day(s) at current use` : ''}`.trim(),
+      detail: s.daysLeft !== null ? `About ${days(s.daysLeft)} left` : `${s.quantity} ${item.unit ?? ''} left`.trim(),
       date: dayOf(today),
       ref: { collection: 'inventory', id: item.id },
     })
@@ -84,8 +85,8 @@ export function reminders(data, today = new Date().toISOString()) {
     out.push({
       kind: 'balance',
       level: b.balance < 0 ? 'overdue' : 'warning',
-      title: `${b.name} balance is below the minimum`,
-      detail: `Balance ${inr(b.balance)} · minimum ${inr(b.minBalance)}`,
+      title: `${b.name} is running low`,
+      detail: `${inr(b.balance)} left, minimum ${inr(b.minBalance)}`,
       date: dayOf(today),
       ref: { collection: 'accounts', id: b.id },
     })
@@ -100,7 +101,7 @@ export function reminders(data, today = new Date().toISOString()) {
       kind: 'maintenance',
       level: d < 0 ? 'overdue' : 'due',
       title: t.title,
-      detail: d < 0 ? `${-d} day(s) overdue` : d === 0 ? 'Due today' : `Due in ${d} day(s)`,
+      detail: d < 0 ? `${days(-d)} late` : d === 0 ? 'Due today' : `Due in ${days(d)}`,
       date: due,
       ref: { collection: 'maintenance', id: t.id },
     })
@@ -112,7 +113,7 @@ export function reminders(data, today = new Date().toISOString()) {
       kind: 'health',
       level: 'warning',
       title: `${a.name || a.tag || a.species} is marked sick`,
-      detail: 'Check on treatment and update the health log',
+      detail: 'Check treatment',
       date: dayOf(today),
       ref: { collection: 'animals', id: a.id },
     })
