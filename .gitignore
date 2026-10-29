@@ -8,3 +8,4 @@ app/ios/
 app/android/
 *.log
 .DS_Store
+app/dist-demo/

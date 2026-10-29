@@ -57,3 +57,11 @@ test('stock and maintenance helpers', () => {
   assert.deepEqual(stockLevel(data.inventory[0]), { quantity: 40, daysLeft: 3, low: true })
   assert.equal(maintenanceDue(data.maintenance[0]), '2026-10-31')
 })
+
+test('the app carries an identical copy of summary.js for the demo build', async () => {
+  const fs = await import('node:fs')
+  assert.equal(
+    fs.readFileSync(new URL('../../app/src/lib/summary.js', import.meta.url), 'utf8'),
+    fs.readFileSync(new URL('../src/summary.js', import.meta.url), 'utf8'),
+  )
+})

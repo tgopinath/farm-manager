@@ -5,7 +5,8 @@ import * as ImagePicker from 'expo-image-picker'
 import { AssessmentCard } from '../components/AssessmentCard'
 import { Button, Card, Chip, Input, Row, Screen, T } from '../components/ui'
 import { useCollection } from '../lib/hooks'
-import { api, type Assessment } from '../lib/api'
+import { api, DEMO, type Assessment } from '../lib/api'
+import { NO_AI } from '../lib/demo'
 import { SPECIES, speciesEmoji, useTheme } from '../lib/theme'
 
 type Photo = { uri: string; base64: string; mimeType: string }
@@ -72,6 +73,11 @@ export default function HealthCheck() {
 
   return (
     <Screen>
+      {DEMO ? (
+        <Card style={{ backgroundColor: t.warnSoft, borderColor: t.warnSoft }}>
+          <T color={t.warn} size={13}>{NO_AI}</T>
+        </Card>
+      ) : null}
       <T muted style={{ marginBottom: 12 }}>
         Take a clear, well-lit photo showing the whole animal, or the part that worries you (eyes, mouth, hooves, skin, droppings).
       </T>
@@ -100,7 +106,7 @@ export default function HealthCheck() {
         <Card style={{ marginTop: 12, padding: 8 }}>
           <Image source={{ uri: photo.uri }} style={{ width: '100%', height: 260, borderRadius: 10, backgroundColor: t.border }} resizeMode="contain" />
           <View style={{ marginTop: 8 }}>
-            <Button title={busy ? 'Checking…' : '🩺 Check health'} busy={busy} onPress={run} />
+            <Button title={busy ? 'Checking…' : '🩺 Check health'} busy={busy} disabled={DEMO} onPress={run} />
           </View>
         </Card>
       ) : null}

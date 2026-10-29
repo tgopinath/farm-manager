@@ -9,6 +9,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
+import { demo, NO_AI } from './demo'
+
+/** Set at build time for the portfolio's online demo (see lib/demo.ts). */
+export const DEMO = process.env.EXPO_PUBLIC_DEMO === '1'
 
 export type Rec = { id: string; createdAt?: string; updatedAt?: string; [k: string]: any }
 
@@ -68,6 +72,7 @@ export async function saveSettings(url: string, key: string) {
 }
 
 export async function request<T = any>(path: string, init: RequestInit = {}): Promise<T> {
+  if (DEMO) throw new Error(NO_AI)
   const { url, key } = await settings()
   const res = await fetch(`${url}/api${path}`, {
     ...init,
@@ -79,7 +84,7 @@ export async function request<T = any>(path: string, init: RequestInit = {}): Pr
   return body as T
 }
 
-export const api = {
+const live = {
   list: (c: string) => request<Rec[]>(`/${c}`),
   create: (c: string, data: object) => request<Rec>(`/${c}`, { method: 'POST', body: JSON.stringify(data) }),
   update: (c: string, id: string, data: object) => request<Rec>(`/${c}/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
@@ -89,6 +94,14 @@ export const api = {
   diagnose: (body: { imageBase64: string; mediaType?: string; species?: string; notes?: string; animalId?: string }) =>
     request<{ result: Assessment; entry: Rec | null }>('/diagnose', { method: 'POST', body: JSON.stringify(body) }),
 }
+
+export const api: typeof live = DEMO
+  ? {
+      ...demo,
+      status: async () => ({ ok: true, storage: 'browser', ai: false, locked: false }),
+      diagnose: async () => { throw new Error(NO_AI) },
+    }
+  : live
 
 export type Assessment = {
   animalVisible: boolean

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, Card, Input, Screen, T } from '../components/ui'
-import { api, getSettings, saveSettings } from '../lib/api'
+import { api, DEMO, getSettings, saveSettings } from '../lib/api'
+import { demo } from '../lib/demo'
 import { useTheme } from '../lib/theme'
 
 export default function Settings() {
@@ -26,6 +27,20 @@ export default function Settings() {
     } finally {
       setBusy(false)
     }
+  }
+
+  if (DEMO) {
+    return (
+      <Screen>
+        <Card>
+          <T bold>Online demo</T>
+          <T muted size={14} style={{ marginVertical: 8 }}>
+            This copy of Farm Manager runs entirely in your browser with a sample farm. Changes are saved on this device only. The full app connects to a farm server, which adds shared data, the AI health check and phone reminders.
+          </T>
+          <Button kind="ghost" title="Reset the sample farm" onPress={() => { demo.reset(); if (typeof window !== 'undefined') window.location.reload() }} />
+        </Card>
+      </Screen>
+    )
   }
 
   return (
