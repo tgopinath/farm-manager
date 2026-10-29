@@ -18,6 +18,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const BASE = process.env.DEMO_BASE ?? '/Portfolio/prototypes/farm/app'
 const OUT = path.join(ROOT, 'prototype/app')
 const ROUTES = ['animals', 'money', 'stock', 'cameras', 'vaccinations', 'settings', 'health-check']
+// The sample animals with fixed ids in app/src/lib/demo.ts, so their links survive a reload too.
+const SAMPLE_ANIMALS = ['raja', 'lakshmi', 'gauri']
 
 const tmp = path.join(ROOT, 'app/dist-demo')
 const r = spawnSync('npx', ['expo', 'export', '--platform', 'web', '--output-dir', 'dist-demo'], {
@@ -31,4 +33,6 @@ fs.rmSync(OUT, { recursive: true, force: true })
 fs.renameSync(tmp, OUT)
 const index = fs.readFileSync(path.join(OUT, 'index.html'))
 for (const route of ROUTES) fs.writeFileSync(path.join(OUT, `${route}.html`), index)
+fs.mkdirSync(path.join(OUT, 'animal'), { recursive: true })
+for (const id of SAMPLE_ANIMALS) fs.writeFileSync(path.join(OUT, 'animal', `${id}.html`), index)
 console.log(`[demo] built ${path.relative(ROOT, OUT)} for ${BASE}`)

@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar'
 import { Text, View } from 'react-native'
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque'
 import { ToastProvider } from '../components/ui'
+import { Sidebar } from '../components/NavBar'
 import { FONT, useTheme, useWide } from '../lib/theme'
 import { DEMO } from '../lib/api'
 
@@ -20,6 +21,7 @@ function DemoStrip() {
 
 export default function RootLayout() {
   const t = useTheme()
+  const wide = useWide()
   const [loaded] = useFonts({ BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold })
   if (!loaded) return <View style={{ flex: 1, backgroundColor: t.bg }} />
   return (
@@ -27,6 +29,9 @@ export default function RootLayout() {
       <View style={{ flex: 1, backgroundColor: t.bg }}>
         <StatusBar style="auto" />
         {DEMO ? <DemoStrip /> : null}
+        <View style={{ flex: 1, flexDirection: 'row' }}>
+        {wide ? <Sidebar /> : null}
+        <View style={{ flex: 1 }}>
         <Stack
           screenOptions={{
             headerStyle: { backgroundColor: t.bg },
@@ -44,6 +49,8 @@ export default function RootLayout() {
           <Stack.Screen name="vaccinations" options={{ title: 'Vaccinations' }} />
           <Stack.Screen name="settings" options={{ title: 'Settings' }} />
         </Stack>
+        </View>
+        </View>
       </View>
     </ToastProvider>
   )

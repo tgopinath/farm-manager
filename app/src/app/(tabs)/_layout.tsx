@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router/js-tabs'
-import { BottomBar, Sidebar, TABS } from '../../components/NavBar'
+import { BottomBar, TABS } from '../../components/NavBar'
 import { useTheme, useWide } from '../../lib/theme'
 
 export default function TabsLayout() {
@@ -7,10 +7,10 @@ export default function TabsLayout() {
   const wide = useWide()
   return (
     <Tabs
-      tabBar={(props) => (wide ? <Sidebar {...props} /> : <BottomBar {...props} />)}
+      // Wide screens use the sidebar from the root layout instead of a tab bar.
+      tabBar={(props) => (wide ? null : <BottomBar {...props} />)}
       screenOptions={{
         headerShown: false,
-        tabBarPosition: wide ? 'left' : 'bottom',
         sceneStyle: { backgroundColor: t.bg },
       }}
     >

@@ -4,7 +4,7 @@
  */
 import { useState } from 'react'
 import { Platform, Pressable, Text, View } from 'react-native'
-import { router } from 'expo-router'
+import { router, usePathname } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import type { BottomTabBarProps } from 'expo-router/js-tabs'
@@ -23,10 +23,26 @@ export const TABS: { name: string; label: string; icon: IconName; active: IconNa
 
 const web = Platform.OS === 'web'
 
-export function Sidebar({ state, navigateToTab }: BottomTabBarProps) {
+/** Which sidebar item a path belongs to, so detail pages keep their section lit. */
+function sectionOf(path: string) {
+  if (path === '/' || path.startsWith('/vaccinations')) return 'index'
+  if (path.startsWith('/animal')) return 'animals'
+  if (path.startsWith('/camera') || path.startsWith('/health-check')) return 'cameras'
+  if (path.startsWith('/money')) return 'money'
+  if (path.startsWith('/stock')) return 'stock'
+  if (path.startsWith('/settings')) return 'settings'
+  return ''
+}
+
+/**
+ * The desktop sidebar. It lives in the root layout rather than the tab bar,
+ * so it stays put on every page, including an animal or a form, the way a
+ * web app's navigation does.
+ */
+export function Sidebar() {
   const t = useTheme()
   const [adding, setAdding] = useState(false)
-  const current = state.routes[state.index]?.name
+  const current = sectionOf(usePathname())
   return (
     <View style={{ width: 248, backgroundColor: t.card, borderRightWidth: 1, borderRightColor: t.border, paddingHorizontal: 16, paddingTop: 28, paddingBottom: 20 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8, marginBottom: 28 }}>
@@ -60,7 +76,7 @@ export function Sidebar({ state, navigateToTab }: BottomTabBarProps) {
               key={tab.name}
               accessibilityRole="link"
               accessibilityState={{ selected: on }}
-              onPress={() => { const r = state.routes.find((x) => x.name === tab.name); if (r) navigateToTab(r.key) }}
+              onPress={() => router.navigate(tab.name === 'index' ? '/' : (`/${tab.name}` as any))}
               style={(s) => {
                 const { hovered } = s as { pressed: boolean; hovered?: boolean }
                 return {
@@ -84,15 +100,16 @@ export function Sidebar({ state, navigateToTab }: BottomTabBarProps) {
         </View>
       ) : null}
       <Pressable
-        onPress={() => router.push('/settings')}
+        onPress={() => router.navigate('/settings')}
         accessibilityRole="link"
+        accessibilityState={{ selected: current === 'settings' }}
         style={(s) => {
           const { hovered } = s as { pressed: boolean; hovered?: boolean }
-          return { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 11, backgroundColor: hovered ? t.sunk : 'transparent', ...(web ? { cursor: 'pointer' } as any : {}) }
+          return { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 11, backgroundColor: current === 'settings' ? t.soft : hovered ? t.sunk : 'transparent', ...(web ? { cursor: 'pointer' } as any : {}) }
         }}
       >
-        <Ionicons name="settings-outline" size={20} color={t.muted} />
-        <Text style={{ color: t.text, fontSize: 15, fontWeight: '500' }}>Settings</Text>
+        <Ionicons name={current === 'settings' ? 'settings' : 'settings-outline'} size={20} color={current === 'settings' ? t.primary : t.muted} />
+        <Text style={{ color: current === 'settings' ? t.primary : t.text, fontSize: 15, fontWeight: current === 'settings' ? '700' : '500' }}>Settings</Text>
       </Pressable>
       <QuickAdd open={adding} onClose={() => setAdding(false)} />
     </View>

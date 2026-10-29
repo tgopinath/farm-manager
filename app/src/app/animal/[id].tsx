@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import { Badge, Button, Card, Chip, Columns, Empty, List, ListRow, Row, Screen, Section, T, useToast, type Tone } from '../../components/ui'
 import { useCollection } from '../../lib/hooks'
 import { api } from '../../lib/api'
-import { niceDate, speciesOf, today, useTheme } from '../../lib/theme'
+import { niceDate, speciesOf, today, useTheme, useWide } from '../../lib/theme'
 
 const STATUSES: [string, string][] = [['healthy', 'Healthy'], ['sick', 'Sick'], ['pregnant', 'Pregnant'], ['sold', 'Sold'], ['dead', 'Dead']]
 const AI: Record<string, { label: string; tone: Tone }> = {
@@ -22,6 +22,7 @@ function ageOf(birth?: string) {
 
 export default function AnimalDetail() {
   const t = useTheme()
+  const wide = useWide()
   const toast = useToast()
   const { id } = useLocalSearchParams<{ id: string }>()
   const animals = useCollection('animals')
@@ -57,7 +58,9 @@ export default function AnimalDetail() {
 
   return (
     <Screen refreshing={animals.loading} onRefresh={() => { animals.refresh(); health.refresh(); vacc.refresh() }}>
-      <Stack.Screen options={{ title: '' }} />
+      {/* On a wide screen the sidebar is the navigation, so a plain link replaces the header bar. */}
+      <Stack.Screen options={{ title: '', headerShown: !wide }} />
+      {wide ? <View style={{ marginTop: 8, marginBottom: 14, marginLeft: -12 }}><Button small kind="ghost" icon="chevron-back" title="All animals" onPress={() => router.navigate('/animals')} /></View> : null}
 
       <View style={{ borderRadius: 24, padding: 22, marginBottom: 24, backgroundColor: sp ? (dark ? sp.softDark : sp.soft) : t.sunk, gap: 16 }}>
         <Row gap={16} wrap={false} align="flex-start">
