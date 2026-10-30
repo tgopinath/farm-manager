@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router/stack'
 import { StatusBar } from 'expo-status-bar'
-import { Text, View } from 'react-native'
+import { Platform, Text, View } from 'react-native'
 import { useFonts, BricolageGrotesque_600SemiBold, BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque'
 import { ToastProvider } from '../components/ui'
 import { Sidebar } from '../components/NavBar'
@@ -11,7 +11,8 @@ import { DEMO } from '../lib/api'
 function DemoStrip() {
   const t = useTheme()
   const wide = useWide()
-  if (wide) return null
+  // The native apps draw edge to edge, so a strip here would sit under the status bar; Settings explains the demo instead.
+  if (wide || Platform.OS !== 'web') return null
   return (
     <View style={{ backgroundColor: t.accentSoft, paddingVertical: 6, paddingHorizontal: 12, alignItems: 'center' }}>
       <Text style={{ color: t.accentText, fontSize: 12.5 }}>Demo farm. Changes stay in this browser.</Text>

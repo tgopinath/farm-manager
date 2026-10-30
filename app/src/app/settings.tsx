@@ -1,3 +1,4 @@
+import { Platform } from 'react-native'
 import { useEffect, useState } from 'react'
 import { Button, Card, Input, Screen, T } from '../components/ui'
 import { api, DEMO, getSettings, saveSettings } from '../lib/api'
@@ -35,7 +36,9 @@ export default function Settings() {
         <Card>
           <T bold>Online demo</T>
           <T muted size={14} style={{ marginVertical: 8 }}>
-            This copy of Farm Manager runs entirely in your browser with a sample farm. Changes are saved on this device only. The full app connects to a farm server, which adds shared data, the AI health check and phone reminders.
+            {Platform.OS === 'web'
+              ? 'This copy of Farm Manager runs entirely in your browser with a sample farm. Changes are saved on this device only.'
+              : 'This copy of Farm Manager runs on your phone with a sample farm. Changes last until you close the app.'}{' '}The full app connects to a farm server, which adds shared data, the AI health check and phone reminders.
           </T>
           <Button kind="ghost" title="Reset the sample farm" onPress={() => { demo.reset(); if (typeof window !== 'undefined') window.location.reload() }} />
         </Card>
