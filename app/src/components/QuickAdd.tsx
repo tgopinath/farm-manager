@@ -1,53 +1,53 @@
 import { router } from 'expo-router'
-import { Pressable, View } from 'react-native'
-import { Sheet, T } from './ui'
+import { Platform, Pressable, View } from 'react-native'
+import Ionicons from '@expo/vector-icons/Ionicons'
+import { IconTile, Sheet, T, type IconName } from './ui'
 import { useTheme } from '../lib/theme'
 
-const ITEMS: { label: string; hint: string; icon: string; params: Record<string, string> }[] = [
-  { label: 'Expense', hint: 'Feed, vet, labour', icon: '➖', params: { collection: 'transactions', type: 'expense' } },
-  { label: 'Income', hint: 'Milk, eggs, sales', icon: '➕', params: { collection: 'transactions', type: 'income' } },
-  { label: 'Animal or flock', hint: 'Goat, cow, chickens', icon: '🐐', params: { collection: 'animals' } },
-  { label: 'Vaccination', hint: 'Schedule a dose', icon: '💉', params: { collection: 'vaccinations' } },
-  { label: 'Health note', hint: 'Check-up, treatment', icon: '🩺', params: { collection: 'health' } },
-  { label: 'Stock item', hint: 'Feed, medicine', icon: '📦', params: { collection: 'inventory' } },
+const ITEMS: { label: string; hint: string; icon: IconName; tint: 'expense' | 'income' | 'primary' | 'accent'; params?: Record<string, string>; path?: string }[] = [
+  { label: 'Expense', hint: 'Feed, vet, labour', icon: 'arrow-up', tint: 'expense', params: { collection: 'transactions', type: 'expense' } },
+  { label: 'Income', hint: 'Milk, eggs, sales', icon: 'arrow-down', tint: 'income', params: { collection: 'transactions', type: 'income' } },
+  { label: 'Animal or flock', hint: 'Goat, cow, chickens', icon: 'paw-outline', tint: 'primary', params: { collection: 'animals' } },
+  { label: 'Vaccination', hint: 'Schedule a dose', icon: 'medkit-outline', tint: 'primary', params: { collection: 'vaccinations' } },
+  { label: 'Health note', hint: 'Check-up, treatment', icon: 'pulse-outline', tint: 'primary', params: { collection: 'health' } },
+  { label: 'Stock item', hint: 'Feed, medicine', icon: 'cube-outline', tint: 'primary', params: { collection: 'inventory' } },
+  { label: 'Health check from a photo', hint: 'AI looks for visible signs of illness', icon: 'camera-outline', tint: 'accent', path: '/health-check' },
 ]
 
 export function QuickAdd({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useTheme()
+  const color = { expense: t.expense, income: t.income, primary: t.primary, accent: t.accent }
   return (
-    <Sheet open={open} onClose={onClose} title="Add to the farm">
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-        {ITEMS.map((it) => (
+    <Sheet open={open} onClose={onClose} title="Add a record">
+      <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 12, overflow: 'hidden' }}>
+        {ITEMS.map((it, i) => (
           <Pressable
             key={it.label}
             accessibilityRole="button"
-            onPress={() => { onClose(); router.push({ pathname: '/edit/[collection]', params: it.params }) }}
+            onPress={() => {
+              onClose()
+              if (it.path) router.push(it.path as any)
+              else router.push({ pathname: '/edit/[collection]', params: it.params! })
+            }}
             style={(s) => {
               const { pressed, hovered } = s as { pressed: boolean; hovered?: boolean }
               return {
-                flexBasis: '47%', flexGrow: 1, borderRadius: 16, padding: 14, gap: 2,
-                backgroundColor: pressed || hovered ? t.soft : t.sunk,
-                transform: [{ scale: pressed ? 0.97 : 1 }],
+                flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 11,
+                borderTopWidth: i ? 1 : 0, borderTopColor: t.border,
+                backgroundColor: pressed || hovered ? t.sunk : t.card,
+                ...(Platform.OS === 'web' ? { cursor: 'pointer' } as any : {}),
               }
             }}
           >
-            <T size={22}>{it.icon}</T>
-            <T bold size={15}>{it.label}</T>
-            <T muted size={12.5}>{it.hint}</T>
+            <IconTile icon={it.icon} color={color[it.tint]} size={34} />
+            <View style={{ flex: 1 }}>
+              <T weight={600} size={14}>{it.label}</T>
+              <T muted size={12.5}>{it.hint}</T>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={t.faint} />
           </Pressable>
         ))}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => { onClose(); router.push('/health-check') }}
-        style={{ marginTop: 10, borderRadius: 16, padding: 14, backgroundColor: t.accentSoft, flexDirection: 'row', alignItems: 'center', gap: 12 }}
-      >
-        <T size={22}>📷</T>
-        <View style={{ flex: 1 }}>
-          <T bold color={t.accentText}>Check an animal from a photo</T>
-          <T size={12.5} color={t.accentText}>AI looks for visible signs of illness</T>
-        </View>
-      </Pressable>
     </Sheet>
   )
 }

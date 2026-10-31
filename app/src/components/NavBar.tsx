@@ -7,14 +7,15 @@ import { Platform, Pressable, Text, View } from 'react-native'
 import { router, usePathname } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from '@expo/vector-icons/Ionicons'
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import type { BottomTabBarProps } from 'expo-router/js-tabs'
-import { FONT, useTheme } from '../lib/theme'
+import { font, useTheme } from '../lib/theme'
 import { DEMO } from '../lib/api'
 import { QuickAdd } from './QuickAdd'
 import type { IconName } from './ui'
 
 export const TABS: { name: string; label: string; icon: IconName; active: IconName }[] = [
-  { name: 'index', label: 'Today', icon: 'sunny-outline', active: 'sunny' },
+  { name: 'index', label: 'Overview', icon: 'grid-outline', active: 'grid' },
   { name: 'animals', label: 'Animals', icon: 'paw-outline', active: 'paw' },
   { name: 'money', label: 'Money', icon: 'wallet-outline', active: 'wallet' },
   { name: 'stock', label: 'Stock', icon: 'cube-outline', active: 'cube' },
@@ -43,13 +44,40 @@ export function Sidebar() {
   const t = useTheme()
   const [adding, setAdding] = useState(false)
   const current = sectionOf(usePathname())
+
+  const item = (key: string, label: string, icon: IconName, activeIcon: IconName, go: () => void) => {
+    const on = current === key
+    return (
+      <Pressable
+        key={key}
+        accessibilityRole="link"
+        accessibilityState={{ selected: on }}
+        onPress={go}
+        style={(s) => {
+          const { hovered } = s as { pressed: boolean; hovered?: boolean }
+          return {
+            flexDirection: 'row', alignItems: 'center', gap: 10, height: 36, paddingHorizontal: 10, borderRadius: 8,
+            backgroundColor: on ? t.soft : hovered ? t.sunk : 'transparent',
+            ...(web ? { cursor: 'pointer', transitionDuration: '100ms' } as any : {}),
+          }
+        }}
+      >
+        <Ionicons name={on ? activeIcon : icon} size={18} color={on ? t.primary : t.muted} />
+        <Text style={{ color: on ? t.primary : t.text, fontSize: 14, ...font(on ? 600 : 500) }}>{label}</Text>
+      </Pressable>
+    )
+  }
+
   return (
-    <View style={{ width: 248, backgroundColor: t.card, borderRightWidth: 1, borderRightColor: t.border, paddingHorizontal: 16, paddingTop: 28, paddingBottom: 20 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 8, marginBottom: 28 }}>
-        <View style={{ width: 36, height: 36, borderRadius: 11, backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 19 }}>🐐</Text>
+    <View style={{ width: 240, backgroundColor: t.card, borderRightWidth: 1, borderRightColor: t.border, paddingHorizontal: 12, paddingTop: 18, paddingBottom: 14 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 6, height: 36, marginBottom: 18 }}>
+        <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: t.primary, alignItems: 'center', justifyContent: 'center' }}>
+          <MaterialCommunityIcons name="barn" size={18} color={t.primaryText} />
         </View>
-        <Text style={{ fontFamily: FONT.display, fontSize: 20, color: t.text, letterSpacing: -0.4 }}>Farm Manager</Text>
+        <View>
+          <Text style={{ fontSize: 14.5, color: t.text, ...font(600) }}>Farm Manager</Text>
+          <Text style={{ fontSize: 12, color: t.muted, ...font(400) }}>{DEMO ? 'Sample farm' : 'My farm'}</Text>
+        </View>
       </View>
 
       <Pressable
@@ -58,59 +86,28 @@ export function Sidebar() {
         style={(s) => {
           const { pressed, hovered } = s as { pressed: boolean; hovered?: boolean }
           return {
-            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 12, paddingVertical: 12, marginBottom: 20,
-            backgroundColor: t.primary, transform: [{ scale: pressed ? 0.98 : 1 }],
-            ...(web ? { cursor: 'pointer', filter: hovered ? 'brightness(1.08)' : 'none' } as any : {}),
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderRadius: 8, height: 38, marginBottom: 18,
+            backgroundColor: t.primary,
+            ...(web ? { cursor: 'pointer', filter: hovered || pressed ? 'brightness(0.92)' : 'none', transitionDuration: '100ms' } as any : {}),
           }
         }}
       >
-        <Ionicons name="add" size={20} color={t.primaryText} />
-        <Text style={{ color: t.primaryText, fontWeight: '600', fontSize: 15 }}>Add record</Text>
+        <Ionicons name="add" size={18} color={t.primaryText} />
+        <Text style={{ color: t.primaryText, fontSize: 14, ...font(600) }}>Add record</Text>
       </Pressable>
 
       <View style={{ gap: 2 }}>
-        {TABS.map((tab) => {
-          const on = current === tab.name
-          return (
-            <Pressable
-              key={tab.name}
-              accessibilityRole="link"
-              accessibilityState={{ selected: on }}
-              onPress={() => router.navigate(tab.name === 'index' ? '/' : (`/${tab.name}` as any))}
-              style={(s) => {
-                const { hovered } = s as { pressed: boolean; hovered?: boolean }
-                return {
-                  flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 11,
-                  backgroundColor: on ? t.soft : hovered ? t.sunk : 'transparent',
-                  ...(web ? { cursor: 'pointer', transitionDuration: '120ms' } as any : {}),
-                }
-              }}
-            >
-              <Ionicons name={on ? tab.active : tab.icon} size={20} color={on ? t.primary : t.muted} />
-              <Text style={{ color: on ? t.primary : t.text, fontWeight: on ? '700' : '500', fontSize: 15 }}>{tab.label}</Text>
-            </Pressable>
-          )
-        })}
+        {TABS.map((tab) => item(tab.name, tab.label, tab.icon, tab.active, () => router.navigate(tab.name === 'index' ? '/' : (`/${tab.name}` as any))))}
       </View>
 
       <View style={{ flex: 1 }} />
       {DEMO ? (
-        <View style={{ backgroundColor: t.accentSoft, borderRadius: 12, padding: 12, marginBottom: 10 }}>
-          <Text style={{ color: t.accentText, fontSize: 12.5, lineHeight: 18 }}>You're trying a demo farm. Changes stay in this browser.</Text>
+        <View style={{ borderWidth: 1, borderColor: t.border, borderRadius: 8, padding: 10, marginBottom: 8 }}>
+          <Text style={{ color: t.text, fontSize: 12.5, ...font(600) }}>Demo data</Text>
+          <Text style={{ color: t.muted, fontSize: 12, lineHeight: 17, ...font(400) }}>Changes stay in this browser.</Text>
         </View>
       ) : null}
-      <Pressable
-        onPress={() => router.navigate('/settings')}
-        accessibilityRole="link"
-        accessibilityState={{ selected: current === 'settings' }}
-        style={(s) => {
-          const { hovered } = s as { pressed: boolean; hovered?: boolean }
-          return { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, paddingHorizontal: 12, borderRadius: 11, backgroundColor: current === 'settings' ? t.soft : hovered ? t.sunk : 'transparent', ...(web ? { cursor: 'pointer' } as any : {}) }
-        }}
-      >
-        <Ionicons name={current === 'settings' ? 'settings' : 'settings-outline'} size={20} color={current === 'settings' ? t.primary : t.muted} />
-        <Text style={{ color: current === 'settings' ? t.primary : t.text, fontSize: 15, fontWeight: current === 'settings' ? '700' : '500' }}>Settings</Text>
-      </Pressable>
+      {item('settings', 'Settings', 'settings-outline', 'settings', () => router.navigate('/settings'))}
       <QuickAdd open={adding} onClose={() => setAdding(false)} />
     </View>
   )
@@ -133,10 +130,10 @@ export function BottomBar({ state, navigateToTab }: BottomTabBarProps) {
             onPress={() => { const r = state.routes.find((x) => x.name === tab.name); if (r) navigateToTab(r.key) }}
             style={{ flex: 1, alignItems: 'center', gap: 3 }}
           >
-            <View style={{ paddingHorizontal: 16, paddingVertical: 4, borderRadius: 999, backgroundColor: on ? t.soft : 'transparent' }}>
-              <Ionicons name={on ? tab.active : tab.icon} size={22} color={on ? t.primary : t.muted} />
+            <View style={{ paddingHorizontal: 14, paddingVertical: 3, borderRadius: 8, backgroundColor: on ? t.soft : 'transparent' }}>
+              <Ionicons name={on ? tab.active : tab.icon} size={21} color={on ? t.primary : t.muted} />
             </View>
-            <Text style={{ fontSize: 11.5, fontWeight: on ? '700' : '500', color: on ? t.primary : t.muted }}>{tab.label}</Text>
+            <Text style={{ fontSize: 11, color: on ? t.primary : t.muted, ...font(on ? 600 : 500) }}>{tab.label}</Text>
           </Pressable>
         )
       })}

@@ -1,62 +1,64 @@
 import { useColorScheme, useWindowDimensions } from 'react-native'
 
 /**
- * Indigo and marigold: the dye crop and the flower that grow at the edge of
- * many Indian farms. Indigo carries every action; marigold is the one warm
- * note, saved for things that need attention. Red and green appear only on
- * money and health status, never as decoration.
+ * A working tool's palette: neutral slate surfaces, one indigo for actions,
+ * and colour otherwise reserved for status. Amber means "act soon", red means
+ * "late or short", green means money in or a healthy animal. Nothing else is
+ * coloured, so those three always mean something.
  */
 const light = {
-  bg: '#F6F7FB',
+  bg: '#F6F7F9',
   card: '#FFFFFF',
   raised: '#FFFFFF',
-  sunk: '#EEF0F7',
-  text: '#151A33',
-  muted: '#5D6483',
-  faint: '#8E94AE',
-  border: '#E3E6F0',
-  primary: '#3046C5',
+  sunk: '#F1F3F6',
+  text: '#101828',
+  muted: '#525C6E',
+  faint: '#8A93A5',
+  border: '#E4E7EC',
+  strong: '#D0D5DD',
+  primary: '#3043C4',
   primaryText: '#FFFFFF',
-  soft: '#E8EBFB',
-  accent: '#F2A30F',
-  accentSoft: '#FFF3D9',
-  accentText: '#8A5600',
-  warn: '#B86E00',
-  warnSoft: '#FFF3D9',
-  danger: '#D23F36',
-  dangerSoft: '#FDE8E6',
-  ok: '#13875A',
-  okSoft: '#E1F5EC',
-  income: '#13875A',
-  expense: '#D23F36',
-  shadow: 'rgba(21, 26, 51, 0.08)',
-  overlay: 'rgba(21, 26, 51, 0.45)',
+  soft: '#EEF0FB',
+  accent: '#D97706',
+  accentSoft: '#FEF4E2',
+  accentText: '#93460A',
+  warn: '#B45309',
+  warnSoft: '#FEF4E2',
+  danger: '#D92D20',
+  dangerSoft: '#FEECEB',
+  ok: '#067647',
+  okSoft: '#E7F6EC',
+  income: '#067647',
+  expense: '#D92D20',
+  shadow: 'rgba(16, 24, 40, 0.06)',
+  overlay: 'rgba(16, 24, 40, 0.5)',
 }
 
 const dark: typeof light = {
-  bg: '#0D1020',
-  card: '#161A2E',
-  raised: '#1D2239',
-  sunk: '#11152A',
-  text: '#ECEEF8',
-  muted: '#A3A9C6',
-  faint: '#6E7494',
-  border: '#272C47',
-  primary: '#8C9BFF',
-  primaryText: '#0D1020',
-  soft: '#20264A',
-  accent: '#FFBE3D',
-  accentSoft: '#3A2C10',
-  accentText: '#FFD27A',
-  warn: '#FFBE3D',
-  warnSoft: '#3A2C10',
-  danger: '#FF7A70',
-  dangerSoft: '#3D1A1A',
-  ok: '#4ED39B',
-  okSoft: '#123326',
-  income: '#4ED39B',
-  expense: '#FF7A70',
-  shadow: 'rgba(0, 0, 0, 0.35)',
+  bg: '#0C0E12',
+  card: '#13161C',
+  raised: '#181C23',
+  sunk: '#10131A',
+  text: '#E8EAEE',
+  muted: '#A0A8B8',
+  faint: '#6C7486',
+  border: '#232833',
+  strong: '#313847',
+  primary: '#8A98FF',
+  primaryText: '#0C0E12',
+  soft: '#1B2040',
+  accent: '#F5A524',
+  accentSoft: '#2A2111',
+  accentText: '#F8C46B',
+  warn: '#F5A524',
+  warnSoft: '#2A2111',
+  danger: '#F97066',
+  dangerSoft: '#3A1513',
+  ok: '#47CD89',
+  okSoft: '#0E2A1D',
+  income: '#47CD89',
+  expense: '#F97066',
+  shadow: 'rgba(0, 0, 0, 0.4)',
   overlay: 'rgba(0, 0, 0, 0.6)',
 }
 
@@ -73,20 +75,39 @@ export function useWide() {
   return useWindowDimensions().width >= WIDE
 }
 
+/**
+ * Inter, one file per weight: React Native picks fonts by family name, not by
+ * fontWeight, so text asks for the family that matches its weight.
+ */
 export const FONT = {
-  display: 'BricolageGrotesque_700Bold',
-  displaySemi: 'BricolageGrotesque_600SemiBold',
+  400: 'Inter_400Regular',
+  500: 'Inter_500Medium',
+  600: 'Inter_600SemiBold',
+  700: 'Inter_700Bold',
+} as const
+
+export type Weight = keyof typeof FONT
+
+export function font(weight: Weight | string | number = 400) {
+  const w = (Number(weight) || 400) as Weight
+  return { fontFamily: FONT[w] ?? FONT[400], fontWeight: String(w) as any }
 }
 
-/** Each species keeps its own colour everywhere it appears. */
+/** Numbers that line up in columns. */
+export const tabular = { fontVariant: ['tabular-nums' as const] }
+
+/**
+ * Species keep one quiet colour each, used as an icon tint and a dot.
+ * The icon set has no goat, so goats borrow the sheep silhouette; the label
+ * always sits beside it.
+ */
 export const SPECIES = [
-  { key: 'goat', label: 'Goats', one: 'Goat', emoji: '🐐', color: '#E39B0B', soft: '#FFF1D6', softDark: '#3A2C10' },
-  { key: 'cow', label: 'Cows', one: 'Cow', emoji: '🐄', color: '#2F7DDB', soft: '#E2EEFD', softDark: '#15284A' },
-  { key: 'chicken', label: 'Chickens', one: 'Chicken', emoji: '🐔', color: '#0E9E93', soft: '#DDF5F2', softDark: '#0F302D' },
+  { key: 'goat', label: 'Goats', one: 'Goat', icon: 'sheep', color: '#B4690E' },
+  { key: 'cow', label: 'Cows', one: 'Cow', icon: 'cow', color: '#2E6BD8' },
+  { key: 'chicken', label: 'Chickens', one: 'Chicken', icon: 'turkey', color: '#0E8A80' },
 ] as const
 
 export const speciesOf = (s?: string) => SPECIES.find((x) => x.key === s)
-export const speciesEmoji = (s?: string) => speciesOf(s)?.emoji ?? '🐾'
 
 export const money = (n: number) =>
   '₹' + (Math.round(n * 100) / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })

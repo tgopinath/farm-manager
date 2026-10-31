@@ -2,7 +2,7 @@ import { router } from 'expo-router'
 import { Pressable, View } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { CameraPlayer } from '../../components/CameraPlayer'
-import { Badge, Button, Card, Empty, ErrorBox, Fab, Row, Screen, Section, T } from '../../components/ui'
+import { Badge, Button, Card, Empty, ErrorBox, Fab, IconTile, Row, Screen, Section, T } from '../../components/ui'
 import { useCollection } from '../../lib/hooks'
 import { useTheme, useWide } from '../../lib/theme'
 
@@ -25,24 +25,18 @@ export default function Cameras() {
     >
       {error ? <ErrorBox message={error} onRetry={refresh} /> : null}
 
-      <Pressable
-        onPress={() => router.push('/health-check')}
-        accessibilityRole="button"
-        style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 16, padding: 20, borderRadius: 20, backgroundColor: t.accentSoft, marginBottom: 28, transform: [{ scale: pressed ? 0.99 : 1 }] })}
-      >
-        <View style={{ width: 54, height: 54, borderRadius: 16, backgroundColor: t.accent, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="camera" size={26} color="#1F1600" />
-        </View>
+      <Card onPress={() => router.push('/health-check')} accessibilityLabel="Check an animal's health" style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 24 }}>
+        <IconTile icon="camera-outline" color={t.accent} size={44} />
         <View style={{ flex: 1, gap: 2 }}>
-          <T display size={19} color={t.accentText}>Check an animal's health</T>
-          <T size={14} color={t.accentText}>Take a photo. The AI looks for visible signs of illness and says how urgent it is.</T>
+          <T display size={15}>Check an animal's health</T>
+          <T muted size={13.5}>Take a photo. The AI looks for visible signs of illness and says how urgent it is.</T>
         </View>
-        <Ionicons name="chevron-forward" size={22} color={t.accentText} />
-      </Pressable>
+        <Ionicons name="chevron-forward" size={18} color={t.faint} />
+      </Card>
 
       <Section title="Farm CCTV">
         {!loading && data.length === 0 ? (
-          <Empty icon="🎥" title="No cameras added" detail="Add a camera's HLS (.m3u8), MJPEG or snapshot address. Cameras that only offer RTSP need a gateway such as go2rtc." action={<Button icon="add" title="Add camera" onPress={add} />} />
+          <Empty icon="videocam-outline" title="No cameras added" detail="Add a camera's HLS (.m3u8), MJPEG or snapshot address. Cameras that only offer RTSP need a gateway such as go2rtc." action={<Button icon="add" title="Add camera" onPress={add} />} />
         ) : null}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
           {data.map((c) => (
@@ -52,7 +46,7 @@ export default function Cameras() {
                 <Pressable onPress={() => router.push(`/camera/${c.id}`)} accessibilityRole="button" style={{ padding: 14 }}>
                   <Row style={{ justifyContent: 'space-between' }} wrap={false}>
                     <View style={{ flexShrink: 1, gap: 2 }}>
-                      <T bold>{c.name}</T>
+                      <T weight={600}>{c.name}</T>
                       {c.location ? <T muted size={13}>{c.location}</T> : null}
                     </View>
                     <Badge label={KIND[c.kind] ?? c.kind} tone="info" dot />

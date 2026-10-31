@@ -45,7 +45,7 @@ export function AssessmentCard({ result }: { result: Assessment }) {
         </>
       ) : null}
 
-      {result.callVet ? <T bold color={t.danger} style={{ marginTop: 12 }}>📞 Contact your veterinarian.</T> : null}
+      {result.callVet ? <T bold color={t.danger} style={{ marginTop: 12 }}>Contact your veterinarian.</T> : null}
       <T muted size={11} style={{ marginTop: 12 }}>
         This is an AI screening from one photo, not a diagnosis. Always confirm with a vet before treating.
       </T>

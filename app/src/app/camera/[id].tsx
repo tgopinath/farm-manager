@@ -34,7 +34,7 @@ export default function CameraScreen() {
       <CameraPlayer kind={cam.kind} url={cam.url} height={260} />
       <T muted size={12} style={{ marginTop: 6 }} numberOfLines={1}>{cam.url}</T>
       <Row style={{ marginTop: 12 }}>
-        {cam.kind === 'snapshot' ? <Button title="🩺 AI check this frame" busy={busy} onPress={check} /> : null}
+        {cam.kind === 'snapshot' ? <Button icon="scan-outline" title="AI check this frame" busy={busy} onPress={check} /> : null}
         <Button kind="ghost" title="Edit camera" onPress={() => router.push({ pathname: '/edit/[collection]', params: { collection: 'cameras', id: cam.id } })} />
       </Row>
       {cam.kind !== 'snapshot' ? (

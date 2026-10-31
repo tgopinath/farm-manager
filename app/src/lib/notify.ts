@@ -63,7 +63,7 @@ export async function scheduleReminders(summary: Summary) {
     const when = at8am(r.date)
     if (when.getTime() <= now) continue
     await Notifications.scheduleNotificationAsync({
-      content: { title: r.kind === 'vaccination' ? `💉 ${r.title}` : `🛠️ ${r.title}`, body: 'Due today' },
+      content: { title: r.title, body: r.kind === 'vaccination' ? 'Vaccination due today' : 'Maintenance due today' },
       trigger: trigger(when),
     })
   }

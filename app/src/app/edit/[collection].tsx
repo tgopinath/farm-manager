@@ -5,10 +5,10 @@
 import { useEffect, useState } from 'react'
 import { Alert, Platform, View } from 'react-native'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
-import { Button, Card, Chip, Input, Row, Screen, T, useToast } from '../../components/ui'
+import { Button, Card, Chip, Input, Row, Screen, SpeciesIcon, T, useToast } from '../../components/ui'
 import { api, Rec } from '../../lib/api'
 import { NUMBER_FIELDS, SCHEMAS, type Field } from '../../lib/schema'
-import { speciesEmoji, today, useTheme } from '../../lib/theme'
+import { today, useTheme } from '../../lib/theme'
 
 const yesterday = () => new Date(Date.now() - 86400000).toISOString().slice(0, 10)
 
@@ -22,7 +22,7 @@ function confirm(message: string): Promise<boolean> {
   )
 }
 
-const refLabel = (r: Rec) => (r.species ? `${speciesEmoji(r.species)} ` : '') + (r.name || r.tag || r.title || 'Unnamed')
+const refLabel = (r: Rec) => r.name || r.tag || r.title || 'Unnamed'
 
 export default function EditRecord() {
   const t = useTheme()
@@ -99,13 +99,13 @@ export default function EditRecord() {
     if (f.type === 'select' || f.type === 'ref') {
       const options = f.type === 'select'
         ? f.options ?? []
-        : (refs[f.ref!] ?? []).filter((r) => r.status !== 'sold' && r.status !== 'dead').map((r) => ({ value: r.id, label: refLabel(r) }))
+        : (refs[f.ref!] ?? []).filter((r) => r.status !== 'sold' && r.status !== 'dead').map((r) => ({ value: r.id, label: refLabel(r), species: r.species as string | undefined }))
       return (
         <View key={f.key} style={{ marginBottom: 14 }}>
-          <T size={14} bold style={{ marginBottom: 8 }}>{label}</T>
+          <T size={13.5} weight={500} style={{ marginBottom: 6 }}>{label}</T>
           <Row>
             {!f.required ? <Chip label="None" active={!v} onPress={() => set(f.key, '')} /> : null}
-            {options.map((o) => <Chip key={o.value} label={o.label} active={v === o.value} onPress={() => set(f.key, o.value)} />)}
+            {options.map((o: { value: string; label: string; species?: string }) => <Chip key={o.value} lead={o.species ? <SpeciesIcon species={o.species} size={15} /> : undefined} label={o.label} active={v === o.value} onPress={() => set(f.key, o.value)} />)}
             {f.type === 'ref' && options.length === 0 ? <T muted size={13}>Nothing added yet</T> : null}
           </Row>
           {f.help ? <T muted size={12.5} style={{ marginTop: 6 }}>{f.help}</T> : null}

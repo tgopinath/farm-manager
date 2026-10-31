@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { router } from 'expo-router'
 import { View } from 'react-native'
-import { Badge, Button, Chip, Empty, List, ListRow, Row, Screen, T, useToast } from '../components/ui'
+import { Badge, Button, Chip, Empty, List, ListRow, Row, Screen, SpeciesIcon, T, useToast } from '../components/ui'
 import { useCollection } from '../lib/hooks'
 import { api } from '../lib/api'
-import { niceDate, speciesEmoji, today } from '../lib/theme'
+import { niceDate, speciesOf, today } from '../lib/theme'
 
 export default function Vaccinations() {
   const toast = useToast()
@@ -34,22 +34,23 @@ export default function Vaccinations() {
         <Button small icon="add" title="Schedule" onPress={() => router.push('/edit/vaccinations')} />
       </Row>
       {!vacc.loading && rows.length === 0 ? (
-        <Empty icon="💉" title={show === 'upcoming' ? 'Nothing scheduled' : 'No doses recorded'} detail="Schedule PPR and ET for goats, FMD and HS for cows, Lasota and Gumboro for chickens. Your phone reminds you at 8 am on the day." />
+        <Empty icon="medkit-outline" title={show === 'upcoming' ? 'Nothing scheduled' : 'No doses recorded'} detail="Schedule PPR and ET for goats, FMD and HS for cows, Lasota and Gumboro for chickens. Your phone reminds you at 8 am on the day." />
       ) : (
         <List>
           {rows.map((v) => {
             const a = byId.get(v.animalId)
-            const who = a ? `${speciesEmoji(a.species)} ${a.name || a.tag}` : v.species ? `${speciesEmoji(v.species)} All ${v.species}s` : 'Animals'
+            const who = a ? (a.name || a.tag) : v.species ? `All ${speciesOf(v.species)?.label.toLowerCase() ?? v.species}` : 'Animals'
+            const sp = a?.species ?? v.species
             const overdue = !v.givenDate && v.dueDate < today()
             return (
               <ListRow
                 key={v.id}
                 onPress={() => router.push({ pathname: '/edit/[collection]', params: { collection: 'vaccinations', id: v.id } })}
-                trailing={!v.givenDate ? <Button small kind={overdue ? 'primary' : 'secondary'} icon="checkmark" title="Given" onPress={() => given(v.id, v.vaccine)} /> : null}
+                trailing={!v.givenDate ? <Button small kind={overdue ? 'primary' : 'secondary'} icon="checkmark" title="Mark given" onPress={() => given(v.id, v.vaccine)} /> : null}
               >
                 <View style={{ gap: 3 }}>
-                  <T bold size={16}>{v.vaccine}</T>
-                  <T muted size={13.5}>{who}</T>
+                  <T weight={600}>{v.vaccine}</T>
+                  <Row gap={6} wrap={false}>{sp ? <SpeciesIcon species={sp} size={14} /> : null}<T muted size={13}>{who}</T></Row>
                   <Badge label={v.givenDate ? `Given ${niceDate(v.givenDate)}` : overdue ? `Overdue since ${niceDate(v.dueDate)}` : `Due ${niceDate(v.dueDate)}`} tone={v.givenDate ? 'ok' : overdue ? 'danger' : 'info'} dot />
                 </View>
               </ListRow>

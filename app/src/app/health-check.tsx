@@ -3,11 +3,11 @@ import { Image, Platform, View } from 'react-native'
 import { useLocalSearchParams } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
 import { AssessmentCard } from '../components/AssessmentCard'
-import { Button, Card, Chip, Input, Row, Screen, T } from '../components/ui'
+import { Button, Card, Chip, Input, Row, Screen, SpeciesIcon, T } from '../components/ui'
 import { useCollection } from '../lib/hooks'
 import { api, DEMO, type Assessment } from '../lib/api'
 import { NO_AI } from '../lib/demo'
-import { SPECIES, speciesEmoji, useTheme } from '../lib/theme'
+import { SPECIES, useTheme } from '../lib/theme'
 
 type Photo = { uri: string; base64: string; mimeType: string }
 
@@ -72,7 +72,7 @@ export default function HealthCheck() {
   }
 
   return (
-    <Screen>
+    <Screen max={760}>
       {DEMO ? (
         <Card style={{ backgroundColor: t.warnSoft, borderColor: t.warnSoft }}>
           <T color={t.warn} size={13}>{NO_AI}</T>
@@ -86,27 +86,27 @@ export default function HealthCheck() {
       <Row style={{ marginBottom: 12 }}>
         <Chip label="Not listed" active={!animalId} onPress={() => setAnimalId('')} />
         {animals.data.filter((a) => a.status !== 'sold' && a.status !== 'dead').slice(0, 30).map((a) => (
-          <Chip key={a.id} label={`${speciesEmoji(a.species)} ${a.name || a.tag || a.species}`} active={animalId === a.id} onPress={() => setAnimalId(a.id)} />
+          <Chip key={a.id} lead={<SpeciesIcon species={a.species} size={15} />} label={a.name || a.tag || a.species} active={animalId === a.id} onPress={() => setAnimalId(a.id)} />
         ))}
       </Row>
       {!animalId ? (
         <Row style={{ marginBottom: 12 }}>
-          {SPECIES.map((s) => <Chip key={s.key} label={`${s.emoji} ${s.label}`} active={species === s.key} onPress={() => setSpecies(species === s.key ? '' : s.key)} />)}
+          {SPECIES.map((s) => <Chip key={s.key} lead={<SpeciesIcon species={s.key} size={15} />} label={s.label} active={species === s.key} onPress={() => setSpecies(species === s.key ? '' : s.key)} />)}
         </Row>
       ) : null}
 
       <Input label="What have you noticed? (optional)" placeholder="Not eating since yesterday, limping…" value={notes} onChangeText={setNotes} multiline />
 
       <Row>
-        <View style={{ flex: 1 }}><Button title="📷 Take photo" onPress={() => choose(true)} /></View>
-        <View style={{ flex: 1 }}><Button kind="ghost" title="🖼️ From gallery" onPress={() => choose(false)} /></View>
+        <View style={{ flex: 1 }}><Button full icon="camera-outline" title="Take photo" onPress={() => choose(true)} /></View>
+        <View style={{ flex: 1 }}><Button full kind="secondary" icon="images-outline" title="Choose from gallery" onPress={() => choose(false)} /></View>
       </Row>
 
       {photo ? (
         <Card style={{ marginTop: 12, padding: 8 }}>
           <Image source={{ uri: photo.uri }} style={{ width: '100%', height: 260, borderRadius: 10, backgroundColor: t.border }} resizeMode="contain" />
           <View style={{ marginTop: 8 }}>
-            <Button title={busy ? 'Checking…' : '🩺 Check health'} busy={busy} disabled={DEMO} onPress={run} />
+            <Button full icon="scan-outline" title={busy ? 'Checking…' : 'Check health'} busy={busy} disabled={DEMO} onPress={run} />
           </View>
         </Card>
       ) : null}

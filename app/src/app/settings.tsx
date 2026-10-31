@@ -32,7 +32,7 @@ export default function Settings() {
 
   if (DEMO) {
     return (
-      <Screen>
+      <Screen max={760}>
         <Card>
           <T bold>Online demo</T>
           <T muted size={14} style={{ marginVertical: 8 }}>
@@ -47,7 +47,7 @@ export default function Settings() {
   }
 
   return (
-    <Screen>
+    <Screen max={760}>
       <Input
         label="Farm server address"
         value={url}

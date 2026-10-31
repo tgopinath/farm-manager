@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react'
 import { Platform, Pressable, View } from 'react-native'
 import { router } from 'expo-router'
 import Ionicons from '@expo/vector-icons/Ionicons'
-import { Badge, Button, Card, Chip, Columns, Empty, ErrorBox, Fab, List, ListRow, Row, Screen, Section, T } from '../../components/ui'
+import { Badge, Button, Card, Chip, Columns, Empty, ErrorBox, Fab, IconTile, List, ListRow, Row, Screen, Section, SpeciesIcon, T } from '../../components/ui'
 import { QuickAdd } from '../../components/QuickAdd'
 import { useCollection } from '../../lib/hooks'
 import type { Rec } from '../../lib/api'
-import { compactMoney, money, niceDate, speciesEmoji, useTheme, useWide } from '../../lib/theme'
+import { compactMoney, money, niceDate, useTheme, useWide } from '../../lib/theme'
 
 const monthKey = (d: Date) => d.toISOString().slice(0, 7)
 const monthName = (m: string, long = false) =>
@@ -26,7 +26,7 @@ function MonthChart({ rows, selected, onSelect }: { rows: Rec[]; selected: strin
   return (
     <Card>
       <Row style={{ justifyContent: 'space-between', marginBottom: 14 }}>
-        <T bold>Last six months</T>
+        <T display size={14.5}>Last six months</T>
         <Row gap={14}>
           <Row gap={6}><View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: t.income }} /><T muted size={13}>Income</T></Row>
           <Row gap={6}><View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: t.expense }} /><T muted size={13}>Spent</T></Row>
@@ -43,14 +43,14 @@ function MonthChart({ rows, selected, onSelect }: { rows: Rec[]; selected: strin
               accessibilityLabel={`${monthName(d.m, true)}: income ${money(d.inc)}, spent ${money(d.exp)}`}
               style={(s) => {
                 const { hovered } = s as { pressed: boolean; hovered?: boolean }
-                return { flex: 1, alignItems: 'center', gap: 6, paddingTop: 4, borderRadius: 10, backgroundColor: on ? t.soft : hovered ? t.sunk : 'transparent', ...(Platform.OS === 'web' ? { cursor: 'pointer' } as any : {}) }
+                return { flex: 1, alignItems: 'center', gap: 6, paddingTop: 4, borderRadius: 8, backgroundColor: on ? t.soft : hovered ? t.sunk : 'transparent', ...(Platform.OS === 'web' ? { cursor: 'pointer' } as any : {}) }
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: H }}>
-                <View style={{ width: 12, height: Math.max(2, (d.inc / max) * H), borderRadius: 4, backgroundColor: t.income, opacity: selected && !on ? 0.35 : 1 }} />
-                <View style={{ width: 12, height: Math.max(2, (d.exp / max) * H), borderRadius: 4, backgroundColor: t.expense, opacity: selected && !on ? 0.35 : 1 }} />
+                <View style={{ width: 12, height: Math.max(2, (d.inc / max) * H), borderRadius: 3, backgroundColor: t.income, opacity: selected && !on ? 0.35 : 1 }} />
+                <View style={{ width: 12, height: Math.max(2, (d.exp / max) * H), borderRadius: 3, backgroundColor: t.expense, opacity: selected && !on ? 0.35 : 1 }} />
               </View>
-              <T size={12.5} weight={on ? '700' : '500'} color={on ? t.primary : t.muted}>{monthName(d.m)}</T>
+              <T size={12.5} weight={on ? 600 : 500} color={on ? t.primary : t.muted}>{monthName(d.m)}</T>
             </Pressable>
           )
         })}
@@ -94,12 +94,12 @@ export default function Money() {
       action={<Row gap={6}>{(['all', 'income', 'expense'] as const).map((k) => <Chip key={k} label={k === 'all' ? 'All' : k === 'income' ? 'In' : 'Out'} active={type === k} onPress={() => setType(k)} />)}</Row>}
     >
       <Row gap={18} style={{ marginBottom: 12 }}>
-        <T size={14} muted>In <T size={14} bold color={t.income}>{money(inc)}</T></T>
-        <T size={14} muted>Out <T size={14} bold color={t.expense}>{money(exp)}</T></T>
+        <T size={14} muted>In <T size={14} weight={600} num color={t.income}>{money(inc)}</T></T>
+        <T size={14} muted>Out <T size={14} weight={600} num color={t.expense}>{money(exp)}</T></T>
         {month ? <Button small kind="ghost" title="Show all months" onPress={() => setMonth('')} /> : null}
       </Row>
       {!tx.loading && rows.length === 0 ? (
-        <Empty icon="🧾" title="Nothing recorded" detail="Record milk, egg and animal sales, and what you spend on feed, medicine and labour." action={<Button title="Add a transaction" icon="add" onPress={() => setAdding(true)} />} />
+        <Empty icon="receipt-outline" title="Nothing recorded" detail="Record milk, egg and animal sales, and what you spend on feed, medicine and labour." action={<Button title="Add a transaction" icon="add" onPress={() => setAdding(true)} />} />
       ) : (
         <List>
           {rows.map((r) => {
@@ -107,14 +107,15 @@ export default function Money() {
             return (
               <ListRow key={r.id} onPress={() => router.push({ pathname: '/edit/[collection]', params: { collection: 'transactions', id: r.id } })}>
                 <Row wrap={false} gap={12}>
-                  <View style={{ width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: inn ? t.okSoft : t.dangerSoft }}>
-                    <Ionicons name={inn ? 'arrow-down' : 'arrow-up'} size={18} color={inn ? t.income : t.expense} />
-                  </View>
+                  <IconTile icon={inn ? 'arrow-down' : 'arrow-up'} color={inn ? t.income : t.expense} size={32} />
                   <View style={{ flex: 1, gap: 1 }}>
-                    <T bold>{r.category || (inn ? 'Income' : 'Expense')} {r.species ? speciesEmoji(r.species) : ''}</T>
+                    <Row gap={6} wrap={false}>
+                      <T weight={500}>{r.category || (inn ? 'Income' : 'Expense')}</T>
+                      {r.species ? <SpeciesIcon species={r.species} size={14} /> : null}
+                    </Row>
                     <T muted size={13} numberOfLines={1}>{[niceDate(r.date), accountName.get(r.accountId), r.note].filter(Boolean).join(', ')}</T>
                   </View>
-                  <T bold size={16} color={inn ? t.income : t.text}>{inn ? '+' : '−'}{money(amt(r))}</T>
+                  <T weight={600} num color={inn ? t.income : t.text}>{inn ? '+' : '−'}{money(amt(r))}</T>
                 </Row>
               </ListRow>
             )
@@ -127,7 +128,7 @@ export default function Money() {
   const side = (
     <View>
       <Section title="Accounts" action={<Button small kind="ghost" icon="add" title="Account" onPress={() => router.push('/edit/accounts')} />}>
-        {balances.length === 0 ? <Empty icon="🏦" title="No accounts" detail="Add your bank account and cash box with a minimum, and you'll be warned when either runs low." /> : (
+        {balances.length === 0 ? <Empty icon="wallet-outline" title="No accounts" detail="Add your bank account and cash box with a minimum, and you'll be warned when either runs low." /> : (
           <List>
             {balances.map((a) => {
               const low = a.balance < (Number(a.minBalance) || 0)
@@ -139,7 +140,7 @@ export default function Money() {
                       <T faint size={12.5}>Warn me below {money(Number(a.minBalance) || 0)}</T>
                     </View>
                     <View style={{ alignItems: 'flex-end', gap: 3 }}>
-                      <T bold size={17} color={low ? t.danger : t.text}>{money(a.balance)}</T>
+                      <T weight={600} num color={low ? t.danger : t.text}>{money(a.balance)}</T>
                       {low ? <Badge label="Below minimum" tone="danger" /> : null}
                     </View>
                   </Row>
@@ -157,10 +158,10 @@ export default function Money() {
               <View key={c} style={{ gap: 5 }}>
                 <Row style={{ justifyContent: 'space-between' }} wrap={false}>
                   <T size={14}>{c}</T>
-                  <T size={14} bold>{money(v)}</T>
+                  <T size={13.5} weight={600} num>{money(v)}</T>
                 </Row>
                 <View style={{ height: 6, borderRadius: 3, backgroundColor: t.sunk }}>
-                  <View style={{ width: `${(v / byCat[0][1]) * 100}%`, height: 6, borderRadius: 3, backgroundColor: t.primary }} />
+                  <View style={{ width: `${(v / byCat[0][1]) * 100}%`, height: 6, borderRadius: 3, backgroundColor: t.expense }} />
                 </View>
               </View>
             ))}

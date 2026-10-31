@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { Alert, Platform, View } from 'react-native'
 import { router } from 'expo-router'
-import { Badge, Button, Card, Chip, Empty, ErrorBox, Fab, IconButton, List, ListRow, Meter, Row, Screen, T, useToast, type Tone } from '../../components/ui'
+import { Badge, Button, Card, Chip, Empty, ErrorBox, Fab, IconButton, IconTile, List, ListRow, Meter, Row, Screen, T, useToast, type IconName, type Tone } from '../../components/ui'
 import { useCollection } from '../../lib/hooks'
 import { api, type Rec } from '../../lib/api'
 import { money, niceDate, today, useTheme, useWide } from '../../lib/theme'
 
 const DAY = 86400000
-const CATEGORY: Record<string, string> = { feed: '🌾', medicine: '💊', equipment: '🛠️', produce: '🥚', other: '📦' }
+const CATEGORY: Record<string, IconName> = { feed: 'leaf-outline', medicine: 'medkit-outline', equipment: 'construct-outline', produce: 'basket-outline', other: 'cube-outline' }
 
 function nextDue(t: Rec): string | null {
   if (t.dueDate) return t.dueDate
@@ -83,7 +83,7 @@ export default function Stock() {
       {tab === 'inventory' ? (
         <>
           {!inv.loading && items.length === 0 ? (
-            <Empty icon="🌾" title="No stock recorded" detail="Add feed with how much you use a day, and you'll be warned five days before it runs out." action={<Button icon="add" title="Add item" onPress={add} />} />
+            <Empty icon="leaf-outline" title="No stock recorded" detail="Add feed with how much you use a day, and you'll be warned five days before it runs out." action={<Button icon="add" title="Add item" onPress={add} />} />
           ) : null}
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
             {items.map((item) => {
@@ -94,9 +94,9 @@ export default function Stock() {
                   <Card style={{ gap: 12 }}>
                     <Row style={{ justifyContent: 'space-between' }} wrap={false} align="flex-start">
                       <Row gap={10} wrap={false} style={{ flexShrink: 1 }}>
-                        <T size={22}>{CATEGORY[item.category] ?? '📦'}</T>
+                        <IconTile icon={CATEGORY[item.category] ?? 'cube-outline'} color={t.primary} size={34} />
                         <View style={{ flexShrink: 1 }}>
-                          <T bold numberOfLines={1}>{item.name}</T>
+                          <T weight={600} numberOfLines={1}>{item.name}</T>
                           <T faint size={12.5}>{item.unitCost ? `${money(Number(item.unitCost))} per ${item.unit}` : item.category}</T>
                         </View>
                       </Row>
@@ -107,8 +107,8 @@ export default function Stock() {
                     </Row>
                     <View>
                       <Row style={{ justifyContent: 'space-between', marginBottom: 8 }} align="flex-end">
-                        <T display size={26}>{item.quantity}<T size={14} muted> {item.unit}</T></T>
-                        {lv.days !== null ? <T size={13.5} weight="600" color={lv.tone === 'ok' ? t.muted : lv.tone === 'danger' ? t.danger : t.warn}>{lv.days} days left</T> : null}
+                        <T display size={22} num>{item.quantity}<T size={13} muted> {item.unit}</T></T>
+                        {lv.days !== null ? <T size={13} weight={600} num color={lv.tone === 'ok' ? t.muted : lv.tone === 'danger' ? t.danger : t.warn}>{lv.days} days left</T> : null}
                       </Row>
                       <Meter value={lv.fill} tone={lv.tone} />
                     </View>
@@ -129,7 +129,7 @@ export default function Stock() {
       ) : (
         <>
           {!tasks.loading && tasks.data.length === 0 ? (
-            <Empty icon="🛠️" title="No upkeep tasks" detail="Track shed cleaning, water tanks, pumps, fencing and vehicle servicing." action={<Button icon="add" title="Add task" onPress={add} />} />
+            <Empty icon="construct-outline" title="No upkeep tasks" detail="Track shed cleaning, water tanks, pumps, fencing and vehicle servicing." action={<Button icon="add" title="Add task" onPress={add} />} />
           ) : (
             <List>
               {tasks.data
