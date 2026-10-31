@@ -1,5 +1,5 @@
 {
-  "buildCommand": "EXPO_PUBLIC_DEMO=1 npx expo export --platform web --output-dir dist",
+  "buildCommand": "EXPO_PUBLIC_DEMO=1 npx expo export --platform web --output-dir dist && node scripts/web-auth.mjs",
   "outputDirectory": "dist",
   "framework": null,
   "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
