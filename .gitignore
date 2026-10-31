@@ -12,3 +12,4 @@ app/dist-demo/
 !prototype/app/assets/node_modules/
 vercel-web/
 .vercel
+*.apk
