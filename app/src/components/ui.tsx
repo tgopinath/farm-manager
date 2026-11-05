@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator, Animated, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text,
-  TextInput, View, type StyleProp, type TextInputProps, type TextStyle, type ViewStyle,
+  TextInput, View, useWindowDimensions, type StyleProp, type TextInputProps, type TextStyle, type ViewStyle,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from '@expo/vector-icons/Ionicons'
@@ -69,24 +69,34 @@ export function IconTile({ icon, color, size = 36 }: { icon: IconName; color?: s
 
 /* ----------------------------------------------------------------- layout */
 
+/** Side padding for a page: 16 on a phone, growing with the window up to 48 on a large screen. */
+export function useGutter() {
+  const { width } = useWindowDimensions()
+  const wide = useWide()
+  return wide ? Math.round(Math.min(48, Math.max(24, width * 0.025))) : 16
+}
+
 /**
- * A page. On a wide screen the title sits in a top bar with the page's
+ * A page. Data pages fill the window on a large screen; pass `max` to keep a
+ * form or reading page to a comfortable width. On a wide screen the title
+ * sits in a top bar with the page's
  * actions, like any web app; on a phone it is a large heading in the page.
  */
-export function Screen({ children, title, subtitle, action, refreshing, onRefresh, max = 1200, fab, back }: {
+export function Screen({ children, title, subtitle, action, refreshing, onRefresh, max, fab, back }: {
   children: React.ReactNode; title?: string; subtitle?: React.ReactNode; action?: React.ReactNode
   refreshing?: boolean; onRefresh?: () => void; max?: number; fab?: React.ReactNode
   back?: { label: string; onPress: () => void }
 }) {
   const t = useTheme()
   const wide = useWide()
+  const gutter = useGutter()
   const insets = useSafeAreaInsets()
   const sub = subtitle ? (typeof subtitle === 'string' ? <T muted size={wide ? 13.5 : 14}>{subtitle}</T> : subtitle) : null
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
       {wide && (title || back) ? (
-        <View style={{ height: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingHorizontal: 32, backgroundColor: t.card, borderBottomWidth: 1, borderBottomColor: t.border }}>
+        <View style={{ height: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingHorizontal: gutter, backgroundColor: t.card, borderBottomWidth: 1, borderBottomColor: t.border }}>
           <View style={{ flexShrink: 1, gap: 1 }}>
             {back ? (
               <Pressable onPress={back.onPress} accessibilityRole="link" style={[{ flexDirection: 'row', alignItems: 'center', gap: 4 }, pointer]}>
@@ -103,7 +113,7 @@ export function Screen({ children, title, subtitle, action, refreshing, onRefres
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingHorizontal: wide ? 32 : 16,
+          paddingHorizontal: gutter,
           paddingTop: wide ? 28 : title ? insets.top + 14 : 14,
           paddingBottom: 120,
           alignItems: 'center',
@@ -133,6 +143,21 @@ export function Row({ children, gap = 8, style, wrap = true, align = 'center' }:
   children: React.ReactNode; gap?: number; style?: StyleProp<ViewStyle>; wrap?: boolean; align?: ViewStyle['alignItems']
 }) {
   return <View style={[{ flexDirection: 'row', flexWrap: wrap ? 'wrap' : 'nowrap', gap, alignItems: align }, style]}>{children}</View>
+}
+
+/**
+ * Cards in a grid that adds columns as the space grows: each column is at
+ * least `min` wide, so a phone gets one and a large screen gets several.
+ */
+export function Grid({ children, min = 300, gap = 16 }: { children: React.ReactNode; min?: number; gap?: number }) {
+  const [w, setW] = useState(0)
+  const cols = w ? Math.max(1, Math.floor((w + gap) / (min + gap))) : 1
+  const item = w ? Math.floor((w - gap * (cols - 1)) / cols) : undefined
+  return (
+    <View onLayout={(e) => setW(Math.floor(e.nativeEvent.layout.width))} style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
+      {React.Children.map(children, (c) => (c == null || c === false ? null : <View style={{ width: item ?? '100%' }}>{c}</View>))}
+    </View>
+  )
 }
 
 /** Two columns on a wide screen, stacked on a phone. */

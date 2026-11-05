@@ -25,7 +25,7 @@ export default function Vaccinations() {
   }
 
   return (
-    <Screen refreshing={vacc.loading} onRefresh={vacc.refresh} max={760}>
+    <Screen refreshing={vacc.loading} onRefresh={vacc.refresh}>
       <Row style={{ justifyContent: 'space-between', marginBottom: 18 }}>
         <Row>
           <Chip label="Upcoming" count={upcoming.length} active={show === 'upcoming'} onPress={() => setShow('upcoming')} />

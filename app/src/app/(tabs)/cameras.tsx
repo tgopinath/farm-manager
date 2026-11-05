@@ -2,7 +2,7 @@ import { router } from 'expo-router'
 import { Pressable, View } from 'react-native'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import { CameraPlayer } from '../../components/CameraPlayer'
-import { Badge, Button, Card, Empty, ErrorBox, Fab, IconTile, Row, Screen, Section, T } from '../../components/ui'
+import { Badge, Button, Card, Empty, ErrorBox, Fab, Grid, IconTile, Row, Screen, Section, T } from '../../components/ui'
 import { useCollection } from '../../lib/hooks'
 import { useTheme, useWide } from '../../lib/theme'
 
@@ -38,10 +38,9 @@ export default function Cameras() {
         {!loading && data.length === 0 ? (
           <Empty icon="videocam-outline" title="No cameras added" detail="Add a camera's HLS (.m3u8), MJPEG or snapshot address. Cameras that only offer RTSP need a gateway such as go2rtc." action={<Button icon="add" title="Add camera" onPress={add} />} />
         ) : null}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+        <Grid min={420}>
           {data.map((c) => (
-            <View key={c.id} style={{ width: wide ? 'calc(50% - 8px)' as any : '100%' }}>
-              <Card padded={false} style={{ overflow: 'hidden' }}>
+              <Card key={c.id} padded={false} style={{ overflow: 'hidden' }}>
                 <CameraPlayer kind={c.kind} url={c.url} height={wide ? 240 : 200} />
                 <Pressable onPress={() => router.push(`/camera/${c.id}`)} accessibilityRole="button" style={{ padding: 14 }}>
                   <Row style={{ justifyContent: 'space-between' }} wrap={false}>
@@ -53,9 +52,8 @@ export default function Cameras() {
                   </Row>
                 </Pressable>
               </Card>
-            </View>
           ))}
-        </View>
+        </Grid>
       </Section>
     </Screen>
   )

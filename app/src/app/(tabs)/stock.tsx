@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Alert, Platform, View } from 'react-native'
 import { router } from 'expo-router'
-import { Badge, Button, Card, Chip, Empty, ErrorBox, Fab, IconButton, IconTile, List, ListRow, Meter, Row, Screen, T, useToast, type IconName, type Tone } from '../../components/ui'
+import { Badge, Button, Card, Chip, Empty, ErrorBox, Fab, Grid, IconButton, IconTile, List, ListRow, Meter, Row, Screen, T, useToast, type IconName, type Tone } from '../../components/ui'
 import { useCollection } from '../../lib/hooks'
 import { api, type Rec } from '../../lib/api'
 import { money, niceDate, today, useTheme, useWide } from '../../lib/theme'
@@ -85,12 +85,12 @@ export default function Stock() {
           {!inv.loading && items.length === 0 ? (
             <Empty icon="leaf-outline" title="No stock recorded" detail="Add feed with how much you use a day, and you'll be warned five days before it runs out." action={<Button icon="add" title="Add item" onPress={add} />} />
           ) : null}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+          <Grid min={300} gap={12}>
             {items.map((item) => {
               const lv = level(item)
               const daily = Number(item.dailyUse) || 0
               return (
-                <View key={item.id} style={{ width: wide ? 'calc(33.333% - 8px)' as any : '100%' }}>
+                <View key={item.id}>
                   <Card style={{ gap: 12 }}>
                     <Row style={{ justifyContent: 'space-between' }} wrap={false} align="flex-start">
                       <Row gap={10} wrap={false} style={{ flexShrink: 1 }}>
@@ -124,7 +124,7 @@ export default function Stock() {
                 </View>
               )
             })}
-          </View>
+          </Grid>
         </>
       ) : (
         <>
