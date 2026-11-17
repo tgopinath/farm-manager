@@ -4,7 +4,7 @@ import { Platform, Text, View } from 'react-native'
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
 import { ToastProvider } from '../components/ui'
 import { Sidebar } from '../components/NavBar'
-import { M3, font, useTheme, useWide } from '../lib/theme'
+import { HIG, M3, font, useTheme, useWide } from '../lib/theme'
 import { DEMO } from '../lib/api'
 
 /** On a phone the demo notice is a thin strip; the sidebar carries it on a wide screen. */
@@ -40,6 +40,15 @@ export default function RootLayout() {
             headerShadowVisible: false,
             headerTintColor: t.text,
             headerTitleStyle: { color: t.text, fontSize: 22, ...font(400) },
+            contentStyle: { backgroundColor: t.bg },
+          } : HIG ? {
+            // iOS (HIG): the native navigation bar on the grouped background, tinted back chevron with the
+            // previous screen's title, 17 pt semibold title; forms open as native page sheets.
+            headerStyle: { backgroundColor: t.bg },
+            headerShadowVisible: false,
+            headerTintColor: t.primary,
+            headerTitleStyle: { color: t.text, fontSize: 17, ...font(600) },
+            headerBackButtonDisplayMode: 'default',
             contentStyle: { backgroundColor: t.bg },
           } : {
             headerStyle: { backgroundColor: t.card },

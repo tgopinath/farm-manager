@@ -69,8 +69,8 @@ const dark: typeof light = {
  * Kolam web apps' Android look: node -e "require('kolam-design-system/m3/kolam-m3.js').scheme('#3043C4')".
  */
 export const M3 =
-  Platform.OS === 'android' ||
-  (Platform.OS === 'web' && typeof location !== 'undefined' && /[?&]app=android\b/.test(location.search))
+  !(Platform.OS === 'web' && typeof location !== 'undefined' && /[?&]app=ios\b/.test(location.search)) && (Platform.OS === 'android' ||
+  (Platform.OS === 'web' && typeof location !== 'undefined' && /[?&]app=android\b/.test(location.search)))
 
 const m3Light = {
   primary: '#424ed1',
@@ -123,6 +123,50 @@ const m3Dark = {
 
 export type M3Roles = typeof m3Light
 
+/**
+ * iOS app mode: Apple Human Interface Guidelines. The iOS build follows HIG (system grouped backgrounds,
+ * San Francisco, large-title headers, an iOS tab bar, SF Symbols, inset grouped lists, sheets, haptics);
+ * Android keeps M3 and the web keeps the look above. On the web `?app=ios` previews it.
+ * The tint stays the app's indigo; secondary labels are darkened from HIG's 60 % gray to pass WCAG AA,
+ * as in the shared Kolam iOS kit. If both flags could apply, iOS wins.
+ */
+export const HIG =
+  Platform.OS === 'ios' ||
+  (Platform.OS === 'web' && typeof location !== 'undefined' && /[?&]app=ios\b/.test(location.search))
+
+const iosLight: typeof light = {
+  ...light,
+  bg: '#F2F2F7',        // systemGroupedBackground
+  card: '#FFFFFF',      // secondarySystemGroupedBackground
+  raised: '#FFFFFF',
+  sunk: '#E9E9EE',      // tertiary fill on grouped
+  text: '#000000',
+  muted: '#5E5E63',     // secondary label, AA on white and on #F2F2F7
+  faint: '#8A8A8E',
+  border: '#C6C6C8',    // opaque separator
+  strong: '#C7C7CC',
+  soft: '#E6E8F8',
+  shadow: 'rgba(0, 0, 0, 0)',
+  overlay: 'rgba(0, 0, 0, 0.25)',
+}
+const iosDark: typeof light = {
+  ...dark,
+  bg: '#000000',
+  card: '#1C1C1E',
+  raised: '#2C2C2E',
+  sunk: '#2C2C2E',
+  text: '#FFFFFF',
+  muted: '#AEAEB2',
+  faint: '#8D8D93',
+  border: '#38383A',
+  strong: '#48484A',
+  soft: '#1E2142',
+  shadow: 'rgba(0, 0, 0, 0)',
+  overlay: 'rgba(0, 0, 0, 0.45)',
+}
+/** Bar material (translucent, like UINavigationBar/UITabBar) for HIG. */
+export const iosBar = (isDark: boolean) => (isDark ? 'rgba(22, 22, 24, 0.86)' : 'rgba(249, 249, 249, 0.9)')
+
 /** The app's palette with M3 roles in its slots; status colours (amber, red, green) keep their meaning. */
 const fromM3 = (base: typeof light, r: M3Roles, isDark: boolean) => ({
   ...base,
@@ -150,6 +194,7 @@ const m3DarkTheme: Theme = fromM3(dark, m3Dark, true)
 export function useTheme(): Theme {
   const darkMode = useColorScheme() === 'dark'
   if (M3) return darkMode ? m3DarkTheme : m3LightTheme
+  if (HIG) return darkMode ? iosDark : iosLight
   return darkMode ? dark : light
 }
 
@@ -177,8 +222,12 @@ export const FONT = {
 
 export type Weight = keyof typeof FONT
 
+/** San Francisco on iOS (HIG): the system font, picked by weight. The web preview asks for it by name. */
+const SF = Platform.OS === 'web' ? '-apple-system, "SF Pro Text", system-ui, sans-serif' : undefined
+
 export function font(weight: Weight | string | number = 400) {
   const w = (Number(weight) || 400) as Weight
+  if (HIG) return { fontFamily: SF, fontWeight: String(w) as any }
   return { fontFamily: FONT[w] ?? FONT[400], fontWeight: String(w) as any }
 }
 

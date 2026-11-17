@@ -3,13 +3,14 @@
  * a sidebar on a laptop, and a bottom bar on a phone.
  */
 import { useState } from 'react'
-import { Platform, Pressable, Text, View } from 'react-native'
+import { Platform, Pressable, Text, View, useColorScheme } from 'react-native'
 import { router, usePathname } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import type { BottomTabBarProps } from 'expo-router/js-tabs'
-import { M3, font, ripple, useTheme } from '../lib/theme'
+import { HIG, M3, font, iosBar, ripple, useTheme } from '../lib/theme'
+import { Icon, haptic } from './ios'
 import { DEMO } from '../lib/api'
 import { QuickAdd } from './QuickAdd'
 import type { IconName } from './ui'
@@ -115,6 +116,7 @@ export function Sidebar() {
 
 export function BottomBar(props: BottomTabBarProps) {
   if (M3) return <M3NavigationBar {...props} />
+  if (HIG) return <IOSTabBar {...props} />
   return <PlainBottomBar {...props} />
 }
 
@@ -148,6 +150,51 @@ function M3NavigationBar({ state, navigateToTab }: BottomTabBarProps) {
           </Pressable>
         )
       })}
+    </View>
+  )
+}
+
+/**
+ * iOS (HIG, iOS 26) tab bar: a floating Liquid Glass-style capsule above the home indicator, SF Symbols
+ * (filled when selected), 10 pt labels, the selected tab tinted on a soft pill, a selection haptic.
+ */
+function IOSTabBar({ state, navigateToTab }: BottomTabBarProps) {
+  const t = useTheme()
+  const insets = useSafeAreaInsets()
+  const isDark = useColorScheme() === 'dark'
+  const current = state.routes[state.index]?.name
+  return (
+    <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingBottom: Math.max(insets.bottom - 8, 8) }} pointerEvents="box-none">
+      <View
+        accessibilityRole="tablist"
+        style={{
+          flexDirection: 'row', height: 62, borderRadius: 31, padding: 4, backgroundColor: iosBar(isDark),
+          borderWidth: 0.5, borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)',
+          shadowColor: '#000', shadowOpacity: isDark ? 0.4 : 0.12, shadowRadius: 18, shadowOffset: { width: 0, height: 8 },
+          ...(web ? { backdropFilter: 'saturate(1.8) blur(20px)' } as any : {}),
+        }}
+      >
+        {TABS.map((tab) => {
+          const on = current === tab.name
+          return (
+            <Pressable
+              key={tab.name}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: on }}
+              accessibilityLabel={tab.label}
+              onPress={() => {
+                haptic('selection')
+                const rt = state.routes.find((x) => x.name === tab.name)
+                if (rt) navigateToTab(rt.key)
+              }}
+              style={({ pressed }) => ({ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, borderRadius: 27, backgroundColor: on ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)') : 'transparent', opacity: pressed ? 0.6 : 1 })}
+            >
+              <Icon name={on ? tab.active : tab.icon} size={22} color={on ? t.primary : t.text} />
+              <Text numberOfLines={1} style={{ fontSize: 10, lineHeight: 12, color: on ? t.primary : t.text, ...font(on ? 600 : 500) }}>{tab.label}</Text>
+            </Pressable>
+          )
+        })}
+      </View>
     </View>
   )
 }
