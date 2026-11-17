@@ -2,6 +2,8 @@
 
 One app for running a small goat, cow and chicken farm — on iPhone, Android and the web, from a single Expo (React Native) codebase.
 
+Architecture: see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 - **Livestock** — individual animals or whole flocks, with status (healthy, sick, pregnant, sold, dead), breed, weight and a health log.
 - **Money** — income and expenditure by category, bank and cash accounts with live balances.
 - **Stock** — feed, medicine, equipment and produce, with days-left estimates from daily use.
