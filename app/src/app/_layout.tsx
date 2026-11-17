@@ -4,7 +4,7 @@ import { Platform, Text, View } from 'react-native'
 import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter'
 import { ToastProvider } from '../components/ui'
 import { Sidebar } from '../components/NavBar'
-import { font, useTheme, useWide } from '../lib/theme'
+import { M3, font, useTheme, useWide } from '../lib/theme'
 import { DEMO } from '../lib/api'
 
 /** On a phone the demo notice is a thin strip; the sidebar carries it on a wide screen. */
@@ -34,7 +34,14 @@ export default function RootLayout() {
         {wide ? <Sidebar /> : null}
         <View style={{ flex: 1 }}>
         <Stack
-          screenOptions={{
+          screenOptions={M3 ? {
+            // Android (M3): small top app bar on the surface, no divider, title-large, on-surface back arrow.
+            headerStyle: { backgroundColor: t.bg },
+            headerShadowVisible: false,
+            headerTintColor: t.text,
+            headerTitleStyle: { color: t.text, fontSize: 22, ...font(400) },
+            contentStyle: { backgroundColor: t.bg },
+          } : {
             headerStyle: { backgroundColor: t.card },
             headerShadowVisible: true,
             headerTintColor: t.primary,

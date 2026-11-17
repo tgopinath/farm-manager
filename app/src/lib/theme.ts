@@ -1,4 +1,4 @@
-import { useColorScheme, useWindowDimensions } from 'react-native'
+import { Platform, useColorScheme, useWindowDimensions } from 'react-native'
 
 /**
  * A working tool's palette: neutral slate surfaces, one indigo for actions,
@@ -62,11 +62,100 @@ const dark: typeof light = {
   overlay: 'rgba(0, 0, 0, 0.6)',
 }
 
-export type Theme = typeof light
+/**
+ * Android app mode: Material Design 3. The Android build follows M3 (colour roles, top app bar, navigation
+ * bar, ripples, M3 shapes); iOS and the web keep the look above. On the web `?app=android` previews it.
+ * The roles come from the shared Kolam M3 kit's generator for the app's indigo, so they match the
+ * Kolam web apps' Android look: node -e "require('kolam-design-system/m3/kolam-m3.js').scheme('#3043C4')".
+ */
+export const M3 =
+  Platform.OS === 'android' ||
+  (Platform.OS === 'web' && typeof location !== 'undefined' && /[?&]app=android\b/.test(location.search))
+
+const m3Light = {
+  primary: '#424ed1',
+  onPrimary: '#ffffff',
+  primaryContainer: '#e5deff',
+  onPrimaryContainer: '#1437b5',
+  secondaryContainer: '#e5deff',
+  onSecondaryContainer: '#48435f',
+  surface: '#faf8ff',
+  onSurface: '#1c1b21',
+  onSurfaceVariant: '#484554',
+  surfaceContainerLowest: '#ffffff',
+  surfaceContainerLow: '#f4f2fc',
+  surfaceContainer: '#efedf6',
+  surfaceContainerHigh: '#e9e7f0',
+  surfaceContainerHighest: '#e3e1eb',
+  outline: '#787586',
+  outlineVariant: '#c8c4d7',
+  inverseSurface: '#312f37',
+  inverseOnSurface: '#f2eff9',
+  inversePrimary: '#c9bfff',
+  error: '#b4271f',
+  errorContainer: '#ffdad3',
+  onErrorContainer: '#93000b',
+}
+const m3Dark = {
+  primary: '#c9bfff',
+  onPrimary: '#002485',
+  primaryContainer: '#1437b5',
+  onPrimaryContainer: '#e5deff',
+  secondaryContainer: '#48435f',
+  onSecondaryContainer: '#e5deff',
+  surface: '#141219',
+  onSurface: '#e3e1eb',
+  onSurfaceVariant: '#c8c4d7',
+  surfaceContainerLowest: '#0f0d15',
+  surfaceContainerLow: '#1c1b21',
+  surfaceContainer: '#201f25',
+  surfaceContainerHigh: '#2a2930',
+  surfaceContainerHighest: '#35343b',
+  outline: '#928ea0',
+  outlineVariant: '#484554',
+  inverseSurface: '#e3e1eb',
+  inverseOnSurface: '#312f37',
+  inversePrimary: '#424ed1',
+  error: '#ffb4a5',
+  errorContainer: '#93000b',
+  onErrorContainer: '#ffdad3',
+}
+
+export type M3Roles = typeof m3Light
+
+/** The app's palette with M3 roles in its slots; status colours (amber, red, green) keep their meaning. */
+const fromM3 = (base: typeof light, r: M3Roles, isDark: boolean) => ({
+  ...base,
+  bg: r.surface,
+  card: r.surfaceContainerLow,
+  raised: r.surfaceContainerHigh,
+  sunk: r.surfaceContainerHighest,
+  text: r.onSurface,
+  muted: r.onSurfaceVariant,
+  faint: r.outline,
+  border: r.outlineVariant,
+  strong: r.outline,
+  primary: r.primary,
+  primaryText: r.onPrimary,
+  soft: r.secondaryContainer,
+  overlay: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.32)',
+  m3: r,
+})
+
+export type Theme = typeof light & { m3?: M3Roles }
+
+const m3LightTheme: Theme = fromM3(light, m3Light, false)
+const m3DarkTheme: Theme = fromM3(dark, m3Dark, true)
 
 export function useTheme(): Theme {
-  return useColorScheme() === 'dark' ? dark : light
+  const darkMode = useColorScheme() === 'dark'
+  if (M3) return darkMode ? m3DarkTheme : m3LightTheme
+  return darkMode ? dark : light
 }
+
+/** Android ripple for a Pressable (M3 state layer); nothing on iOS and the web. */
+export const ripple = (t: Theme, borderless = false, color?: string) =>
+  M3 && Platform.OS === 'android' ? { android_ripple: { color: color ?? (t.m3 ? t.m3.onSurface + '1f' : 'rgba(0,0,0,0.12)'), borderless, foreground: true } } : {}
 
 /** Sidebar layout from this width up; bottom tabs below it. */
 export const WIDE = 900

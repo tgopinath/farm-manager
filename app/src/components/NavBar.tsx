@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
 import type { BottomTabBarProps } from 'expo-router/js-tabs'
-import { font, useTheme } from '../lib/theme'
+import { M3, font, ripple, useTheme } from '../lib/theme'
 import { DEMO } from '../lib/api'
 import { QuickAdd } from './QuickAdd'
 import type { IconName } from './ui'
@@ -113,7 +113,46 @@ export function Sidebar() {
   )
 }
 
-export function BottomBar({ state, navigateToTab }: BottomTabBarProps) {
+export function BottomBar(props: BottomTabBarProps) {
+  if (M3) return <M3NavigationBar {...props} />
+  return <PlainBottomBar {...props} />
+}
+
+/** Android (M3) navigation bar: 80dp, surface container, pill indicator behind the active icon, ripple. */
+function M3NavigationBar({ state, navigateToTab }: BottomTabBarProps) {
+  const t = useTheme()
+  const r = t.m3!
+  const insets = useSafeAreaInsets()
+  const current = state.routes[state.index]?.name
+  return (
+    <View accessibilityRole="tablist" style={{ flexDirection: 'row', backgroundColor: r.surfaceContainer, paddingBottom: insets.bottom, height: 80 + insets.bottom }}>
+      {TABS.map((tab) => {
+        const on = current === tab.name
+        return (
+          <Pressable
+            key={tab.name}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            accessibilityLabel={tab.label}
+            {...ripple(t, true)}
+            onPress={() => {
+              const rt = state.routes.find((x) => x.name === tab.name)
+              if (rt) navigateToTab(rt.key)
+            }}
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, paddingTop: 12, paddingBottom: 16 }}
+          >
+            <View style={{ width: 64, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? r.secondaryContainer : 'transparent' }}>
+              <Ionicons name={on ? tab.active : tab.icon} size={24} color={on ? r.onSecondaryContainer : r.onSurfaceVariant} />
+            </View>
+            <Text numberOfLines={1} style={{ fontSize: 12, lineHeight: 16, letterSpacing: 0.5, color: on ? r.onSurface : r.onSurfaceVariant, ...font(on ? 700 : 500) }}>{tab.label}</Text>
+          </Pressable>
+        )
+      })}
+    </View>
+  )
+}
+
+function PlainBottomBar({ state, navigateToTab }: BottomTabBarProps) {
   const t = useTheme()
   const insets = useSafeAreaInsets()
   const current = state.routes[state.index]?.name

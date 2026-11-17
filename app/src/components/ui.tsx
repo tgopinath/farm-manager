@@ -6,7 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Ionicons from '@expo/vector-icons/Ionicons'
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons'
-import { font, speciesOf, tabular, useTheme, useWide } from '../lib/theme'
+import { M3, font, ripple, speciesOf, tabular, useTheme, useWide } from '../lib/theme'
 
 export type IconName = React.ComponentProps<typeof Ionicons>['name']
 type PressState = { pressed: boolean; hovered?: boolean; focused?: boolean }
@@ -92,9 +92,13 @@ export function Screen({ children, title, subtitle, action, refreshing, onRefres
   const gutter = useGutter()
   const insets = useSafeAreaInsets()
   const sub = subtitle ? (typeof subtitle === 'string' ? <T muted size={wide ? 13.5 : 14}>{subtitle}</T> : subtitle) : null
+  // Android (M3): a small top app bar carries the title and the page's action; it tints once content scrolls under it.
+  const [scrolled, setScrolled] = useState(false)
+  const m3Bar = M3 && !wide && !!title
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bg }}>
+      {m3Bar ? <M3AppBar title={title!} action={action} scrolled={scrolled} /> : null}
       {wide && (title || back) ? (
         <View style={{ height: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingHorizontal: gutter, backgroundColor: t.card, borderBottomWidth: 1, borderBottomColor: t.border }}>
           <View style={{ flexShrink: 1, gap: 1 }}>
@@ -114,15 +118,18 @@ export function Screen({ children, title, subtitle, action, refreshing, onRefres
         style={{ flex: 1 }}
         contentContainerStyle={{
           paddingHorizontal: gutter,
-          paddingTop: wide ? 28 : title ? insets.top + 14 : 14,
+          paddingTop: wide ? 28 : m3Bar ? 4 : title ? insets.top + 14 : 14,
           paddingBottom: 120,
           alignItems: 'center',
         }}
         refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={t.primary} /> : undefined}
         keyboardShouldPersistTaps="handled"
+        onScroll={m3Bar ? (e) => setScrolled(e.nativeEvent.contentOffset.y > 0) : undefined}
+        scrollEventThrottle={m3Bar ? 32 : undefined}
       >
         <View style={{ width: '100%', maxWidth: max }}>
-          {!wide && title ? (
+          {m3Bar && sub ? <View style={{ marginBottom: 16 }}>{sub}</View> : null}
+          {!wide && title && !m3Bar ? (
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 18 }}>
               <View style={{ flexShrink: 1, gap: 2 }}>
                 <T display size={26}>{title}</T>
@@ -135,6 +142,21 @@ export function Screen({ children, title, subtitle, action, refreshing, onRefres
         </View>
       </ScrollView>
       {fab}
+    </View>
+  )
+}
+
+/** M3 small top app bar: 64dp, title-large, surface that turns surface-container when content scrolls under it. */
+export function M3AppBar({ title, action, scrolled, onBack }: { title: string; action?: React.ReactNode; scrolled?: boolean; onBack?: () => void }) {
+  const t = useTheme()
+  const insets = useSafeAreaInsets()
+  return (
+    <View style={{ paddingTop: insets.top, backgroundColor: scrolled ? t.m3?.surfaceContainer ?? t.card : t.bg }}>
+      <View style={{ height: 64, flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: onBack ? 4 : 16, paddingRight: 8 }}>
+        {onBack ? <IconButton icon="arrow-back" label="Back" onPress={onBack} color={t.text} /> : null}
+        <Text accessibilityRole="header" numberOfLines={1} style={{ flex: 1, color: t.text, fontSize: 22, lineHeight: 28, ...font(400) }}>{title}</Text>
+        {action ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>{action}</View> : null}
+      </View>
     </View>
   )
 }
@@ -190,15 +212,17 @@ export function Card({ children, style, onPress, padded = true, accessibilityLab
   children: React.ReactNode; style?: StyleProp<ViewStyle>; onPress?: () => void; padded?: boolean; accessibilityLabel?: string
 }) {
   const t = useTheme()
-  const base: ViewStyle = { backgroundColor: t.card, borderRadius: 12, borderWidth: 1, borderColor: t.border, padding: padded ? 16 : 0 }
+  const base: ViewStyle = { backgroundColor: t.card, borderRadius: 12, borderWidth: M3 ? 0 : 1, borderColor: t.border, padding: padded ? 16 : 0, overflow: M3 ? 'hidden' : undefined }
   if (!onPress) return <View style={[base, web ? { boxShadow: `0 1px 2px ${t.shadow}` } as any : null, style]}>{children}</View>
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      {...ripple(t)}
       style={(s) => {
         const { pressed, hovered } = s as PressState
+        if (M3) return [base, style, web && pressed ? { backgroundColor: t.sunk } : null]
         return [base, style, {
           borderColor: hovered ? t.strong : t.border,
           backgroundColor: pressed ? t.sunk : t.card,
@@ -221,7 +245,7 @@ export function Panel({ title, subtitle, action, children, style }: {
 }) {
   const t = useTheme()
   return (
-    <View style={[{ backgroundColor: t.card, borderRadius: 12, borderWidth: 1, borderColor: t.border, overflow: 'hidden', marginBottom: 20 }, web ? { boxShadow: `0 1px 2px ${t.shadow}` } as any : null, style]}>
+    <View style={[{ backgroundColor: t.card, borderRadius: 12, borderWidth: M3 ? 0 : 1, borderColor: t.border, overflow: 'hidden', marginBottom: 20 }, web ? { boxShadow: `0 1px 2px ${t.shadow}` } as any : null, style]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: t.border }}>
         <View style={{ flexShrink: 1 }}>
           <T display size={14.5}>{title}</T>
@@ -239,7 +263,7 @@ export function List({ children, bare }: { children: React.ReactNode; bare?: boo
   const t = useTheme()
   const items = React.Children.toArray(children).filter(Boolean)
   return (
-    <View style={bare ? null : [{ backgroundColor: t.card, borderRadius: 12, borderWidth: 1, borderColor: t.border, overflow: 'hidden' }, web ? { boxShadow: `0 1px 2px ${t.shadow}` } as any : null]}>
+    <View style={bare ? null : [{ backgroundColor: t.card, borderRadius: 12, borderWidth: M3 ? 0 : 1, borderColor: t.border, overflow: 'hidden' }, web ? { boxShadow: `0 1px 2px ${t.shadow}` } as any : null]}>
       {items.map((c, i) => (
         <View key={i} style={i ? { borderTopWidth: 1, borderTopColor: t.border } : null}>{c}</View>
       ))}
@@ -261,8 +285,10 @@ export function ListRow({ children, onPress, trailing, accessibilityLabel }: {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      {...ripple(t)}
       style={(s) => {
         const { pressed, hovered } = s as PressState
+        if (M3 && !web) return { flex: 1, ...pad }
         return { flex: 1, ...pad, backgroundColor: pressed ? t.sunk : hovered ? t.bg : 'transparent', ...(web ? { cursor: 'pointer', transitionDuration: '100ms' } as any : {}) }
       }}
     >
@@ -313,6 +339,7 @@ export function Button({ title, onPress, kind = 'primary', disabled, busy, small
     accent: [t.accent, '#1F1300', t.accent],
   }
   const [bg, fg, edge] = palette[kind]
+  if (M3) return <M3Button {...{ title, onPress, kind, disabled, busy, small, icon, full, accessibilityLabel }} />
   return (
     <Pressable
       accessibilityRole="button"
@@ -348,6 +375,51 @@ export function Button({ title, onPress, kind = 'primary', disabled, busy, small
   )
 }
 
+/** M3 buttons: filled (primary), outlined (secondary, danger), text (ghost), tonal (accent); 40dp, full radius. */
+function M3Button({ title, onPress, kind = 'primary', disabled, busy, small, icon, full, accessibilityLabel }: {
+  title?: string; onPress: () => void; kind?: Kind; disabled?: boolean; busy?: boolean; small?: boolean
+  icon?: IconName; full?: boolean; accessibilityLabel?: string
+}) {
+  const t = useTheme()
+  const r = t.m3!
+  const look: Record<Kind, { bg: string; fg: string; edge?: string }> = {
+    primary: { bg: r.primary, fg: r.onPrimary },
+    secondary: { bg: 'transparent', fg: r.primary, edge: r.outline },
+    ghost: { bg: 'transparent', fg: r.primary },
+    danger: { bg: 'transparent', fg: r.error, edge: r.outline },
+    accent: { bg: r.secondaryContainer, fg: r.onSecondaryContainer },
+  }
+  const { bg, fg, edge } = look[kind]
+  const h = small ? 32 : 40
+  return (
+    <View style={{ borderRadius: h / 2, overflow: 'hidden', alignSelf: full ? 'stretch' : 'flex-start', opacity: disabled ? 0.38 : 1 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? title}
+        accessibilityState={{ disabled: !!(disabled || busy) }}
+        onPress={onPress}
+        disabled={disabled || busy}
+        {...ripple(t, false, fg + '29')}
+        style={(s) => ({
+          backgroundColor: web && (s as PressState).hovered ? (kind === 'primary' ? bg : r.primary + '14') : bg,
+          borderWidth: edge ? 1 : 0, borderColor: edge, borderRadius: h / 2, minHeight: h,
+          paddingHorizontal: title ? (kind === 'ghost' ? 12 : small ? 16 : 24) : (small ? 8 : 10),
+          paddingLeft: title && icon && kind !== 'ghost' ? (small ? 12 : 16) : undefined,
+          flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+          ...(web ? { cursor: disabled ? 'not-allowed' : 'pointer' } as any : {}),
+        })}
+      >
+        {busy ? <ActivityIndicator color={fg} size="small" /> : (
+          <>
+            {icon ? <Ionicons name={icon} size={18} color={fg} /> : null}
+            {title ? <Text style={{ color: fg, fontSize: 14, lineHeight: 20, letterSpacing: 0.1, ...font(600) }}>{title}</Text> : null}
+          </>
+        )}
+      </Pressable>
+    </View>
+  )
+}
+
 export function IconButton({ icon, onPress, label, color }: { icon: IconName; onPress: () => void; label: string; color?: string }) {
   const t = useTheme()
   return (
@@ -356,12 +428,14 @@ export function IconButton({ icon, onPress, label, color }: { icon: IconName; on
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={6}
+      {...ripple(t, true)}
       style={(s) => {
         const { pressed, hovered } = s as PressState
+        if (M3) return [{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: web && (pressed || hovered) ? t.sunk : 'transparent' }, pointer]
         return [{ width: 34, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: pressed || hovered ? t.sunk : 'transparent' }, pointer]
       }}
     >
-      <Ionicons name={icon} size={19} color={color ?? t.muted} />
+      <Ionicons name={icon} size={M3 ? 24 : 19} color={color ?? t.muted} />
     </Pressable>
   )
 }
@@ -375,17 +449,21 @@ export function Chip({ label, active, onPress, lead, count }: { label: string; a
       disabled={!onPress}
       accessibilityRole="button"
       accessibilityState={{ selected: !!active }}
+      {...ripple(t)}
       style={(s) => {
         const { pressed, hovered } = s as PressState
+        if (M3) return [styles.chip, { height: 32, paddingVertical: 0, paddingHorizontal: active ? 8 : 16, overflow: 'hidden',
+          backgroundColor: active ? t.m3!.secondaryContainer : web && (pressed || hovered) ? t.sunk : 'transparent',
+          borderColor: active ? 'transparent' : t.m3!.outline }, pointer]
         return [styles.chip, {
           backgroundColor: active ? t.soft : pressed || hovered ? t.sunk : t.card,
           borderColor: active ? t.primary : t.border,
         }, web ? { cursor: 'pointer', transitionDuration: '100ms' } as any : null]
       }}
     >
-      {lead}
-      <Text style={{ color: active ? t.primary : t.text, fontSize: 13, ...font(500) }}>{label}</Text>
-      {count !== undefined ? <Text style={{ color: active ? t.primary : t.faint, fontSize: 12.5, ...font(500), ...tabular }}>{count}</Text> : null}
+      {M3 && active ? <Ionicons name="checkmark" size={18} color={t.m3!.onSecondaryContainer} /> : lead}
+      <Text style={{ color: M3 ? (active ? t.m3!.onSecondaryContainer : t.m3!.onSurfaceVariant) : active ? t.primary : t.text, fontSize: M3 ? 14 : 13, ...font(500) }}>{label}</Text>
+      {count !== undefined ? <Text style={{ color: M3 ? (active ? t.m3!.onSecondaryContainer : t.m3!.onSurfaceVariant) : active ? t.primary : t.faint, fontSize: 12.5, ...font(500), ...tabular }}>{count}</Text> : null}
     </Pressable>
   )
 }
@@ -427,7 +505,7 @@ export function Input(props: TextInputProps & { label?: string; help?: string; p
   return (
     <View style={{ marginBottom: 18 }}>
       {label ? <Text style={[styles.label, { color: t.text }]}>{label}</Text> : null}
-      <View style={[styles.inputWrap, { backgroundColor: t.card, borderColor: focus ? t.primary : t.strong }, web ? { boxShadow: focus ? `0 0 0 3px ${t.soft}` : `0 1px 2px ${t.shadow}`, transitionDuration: '100ms' } as any : null]}>
+      <View style={[styles.inputWrap, { backgroundColor: t.card, borderColor: focus ? t.primary : t.strong }, M3 ? { backgroundColor: 'transparent', borderRadius: 4, borderWidth: focus ? 2 : 1, paddingHorizontal: focus ? 15 : 16, minHeight: 56, borderColor: focus ? t.primary : t.m3!.outline } : null, web && !M3 ? { boxShadow: focus ? `0 0 0 3px ${t.soft}` : `0 1px 2px ${t.shadow}`, transitionDuration: '100ms' } as any : null]}>
         {prefix ? <Text style={{ color: t.muted, fontSize: 15, marginRight: 4, ...font(500) }}>{prefix}</Text> : null}
         <TextInput
           placeholderTextColor={t.faint}
@@ -475,6 +553,7 @@ export const useToast = () => useContext(ToastCtx)
 
 /** One message at a time, bottom centre, with an optional Undo. */
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const t = useTheme()
   const wide = useWide()
   const insets = useSafeAreaInsets()
   const [msg, setMsg] = useState<ToastMsg | null>(null)
@@ -506,12 +585,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             opacity: anim, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }],
           }}
         >
-          <View accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#101828', borderRadius: 10, paddingVertical: 10, paddingLeft: 14, paddingRight: msg.action ? 6 : 16, maxWidth: 520 }}>
-            <Ionicons name="checkmark-circle" size={18} color="#47CD89" />
-            <Text style={{ color: '#F2F4F7', fontSize: 14, flexShrink: 1, ...font(500) }}>{msg.text}</Text>
+          <View accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: M3 ? t.m3!.inverseSurface : '#101828', borderRadius: M3 ? 4 : 10, minHeight: M3 ? 48 : undefined, paddingVertical: 10, paddingLeft: 14, paddingRight: msg.action ? 6 : 16, maxWidth: 520 }}>
+            {M3 ? null : <Ionicons name="checkmark-circle" size={18} color="#47CD89" />}
+            <Text style={{ color: M3 ? t.m3!.inverseOnSurface : '#F2F4F7', fontSize: 14, flexShrink: 1, ...font(M3 ? 400 : 500) }}>{msg.text}</Text>
             {msg.action ? (
               <Pressable onPress={() => { msg.action!.onPress(); hide() }} accessibilityRole="button" style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }, pointer]}>
-                <Text style={{ color: '#A4B0FF', fontSize: 14, ...font(600) }}>{msg.action.label}</Text>
+                <Text style={{ color: M3 ? t.m3!.inversePrimary : '#A4B0FF', fontSize: 14, ...font(600) }}>{msg.action.label}</Text>
               </Pressable>
             ) : null}
           </View>
@@ -539,9 +618,9 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         <Animated.View style={{ width: '100%', maxWidth: wide ? 460 : undefined, transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [wide ? 8 : 48, 0] }) }] }}>
           <Pressable
             onPress={() => {}}
-            style={{ backgroundColor: t.card, borderRadius: 16, borderBottomLeftRadius: wide ? 16 : 0, borderBottomRightRadius: wide ? 16 : 0, padding: 20, paddingBottom: 20 + (wide ? 0 : insets.bottom) }}
+            style={{ backgroundColor: M3 ? t.m3!.surfaceContainerLow : t.card, borderRadius: M3 ? 28 : 16, borderBottomLeftRadius: wide ? 16 : 0, borderBottomRightRadius: wide ? 16 : 0, padding: 20, paddingBottom: 20 + (wide ? 0 : insets.bottom) }}
           >
-            {!wide ? <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: t.strong, alignSelf: 'center', marginBottom: 14 }} /> : null}
+            {!wide ? <View style={{ width: M3 ? 32 : 36, height: 4, borderRadius: 2, backgroundColor: M3 ? t.m3!.onSurfaceVariant + '66' : t.strong, alignSelf: 'center', marginBottom: 14, marginTop: M3 ? -4 : 0 }} /> : null}
             <Row style={{ justifyContent: 'space-between', marginBottom: 14 }} wrap={false}>
               <T display size={17}>{title}</T>
               <IconButton icon="close" label="Close" onPress={onClose} />
@@ -564,14 +643,15 @@ export function Fab({ onPress, label = 'Add' }: { onPress: () => void; label?: s
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
+      {...ripple(t, false, t.m3 ? t.m3.onPrimaryContainer + '29' : undefined)}
       style={({ pressed }) => ({
-        position: 'absolute', right: 18, bottom: 18, width: 56, height: 56, borderRadius: 16,
-        backgroundColor: t.primary, alignItems: 'center', justifyContent: 'center',
-        transform: [{ scale: pressed ? 0.95 : 1 }],
-        shadowColor: '#101828', shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 6,
+        position: 'absolute', right: M3 ? 16 : 18, bottom: M3 ? 16 : 18, width: 56, height: 56, borderRadius: 16, overflow: M3 ? 'hidden' : undefined,
+        backgroundColor: M3 ? t.m3!.primaryContainer : t.primary, alignItems: 'center', justifyContent: 'center',
+        transform: [{ scale: pressed && !M3 ? 0.95 : 1 }],
+        shadowColor: '#101828', shadowOpacity: M3 ? 0.18 : 0.25, shadowRadius: M3 ? 8 : 12, shadowOffset: { width: 0, height: M3 ? 4 : 6 }, elevation: M3 ? 3 : 6,
       })}
     >
-      <Ionicons name="add" size={28} color={t.primaryText} />
+      <Ionicons name="add" size={M3 ? 24 : 28} color={M3 ? t.m3!.onPrimaryContainer : t.primaryText} />
     </Pressable>
   )
 }
