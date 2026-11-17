@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"; WORK="$(mktemp -d)/farm"
 cp -cR "$ROOT/app" "$WORK"
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ANDROID_HOME="$HOME/Library/Android/sdk" EXPO_PUBLIC_DEMO=1 CI=1
 cd "$WORK" && npx expo prebuild --platform android --no-install --clean
-cd android && ./gradlew --no-daemon --init-script ~/Documents/android-wrappers/maven-mirror.gradle assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+cd android && ./gradlew --no-daemon --init-script "$ROOT/scripts/maven-mirror.gradle" assembleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
 cp app/build/outputs/apk/release/app-release.apk "$ROOT/farm-manager.apk"
 cd "$ROOT" && rm -rf "$(dirname "$WORK")"   # the temporary copy and its build outputs
 [ -n "$NO_UPLOAD" ] && { echo "Built $ROOT/farm-manager.apk (not uploaded)"; exit 0; }
